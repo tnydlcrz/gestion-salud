@@ -115,7 +115,10 @@ class Indicador(models.Model):
         return self.area_direccion or (self.area.nombre if self.area_id else "")
 
     def version_vigente(self):
-        return self.versiones.filter(fecha_vigencia_hasta__isnull=True).first()
+        for version in self.versiones.all():
+            if version.fecha_vigencia_hasta is None:
+                return version
+        return None
 
 
 class IndicadorVersion(models.Model):

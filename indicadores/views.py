@@ -11,7 +11,15 @@ from cuentas.permissions import areas_visibles, puede_cargar_area, puede_ver_are
 
 from .forms import MedicionForm
 from .models import AreaDireccion, Indicador, Medicion
-from .services import resumen_area, serie_chart, serie_desde_mediciones, texto_nd, ultima_medicion_publicada
+from .services import (
+    indicadores_precargados,
+    resumen_area,
+    resumenes_areas,
+    serie_chart,
+    serie_desde_mediciones,
+    texto_nd,
+    ultima_medicion_publicada,
+)
 
 
 class AreaPermisoMixin(LoginRequiredMixin):
@@ -30,7 +38,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["resumenes"] = [resumen_area(area) for area in areas_visibles(self.request.user)]
+        ctx["resumenes"] = resumenes_areas(areas_visibles(self.request.user))
         return ctx
 
 
@@ -64,7 +72,7 @@ class IndicadorDetailView(AreaPermisoMixin, DetailView):
 
     def area_objeto(self):
         self.object = get_object_or_404(
-            Indicador.objects.select_related("area", "dimension", "responsable"),
+            indicadores_precargados(),
             pk=self.kwargs["pk"],
         )
         return self.object.area
@@ -75,18 +83,19 @@ class IndicadorDetailView(AreaPermisoMixin, DetailView):
         anio = self.request.GET.get("anio")
         mediciones = []
         if version:
-            qs = version.mediciones.filter(estado=Medicion.Estado.PUBLICADO).select_related("periodo")
+            mediciones = list(version.mediciones.all())
             if anio and anio.isdigit():
-                qs = qs.filter(periodo__anio=int(anio))
-            mediciones = list(qs)
+                mediciones = [m for m in mediciones if m.periodo.anio == int(anio)]
         ultima = ultima_medicion_publicada(self.object)
+        metas = list(version.metas.all()) if version else []
+        meta = ultima.meta_aplicable() if ultima else (metas[0] if metas else None)
         ctx.update(
             {
                 "version": version,
                 "mediciones": mediciones,
                 "ultima": ultima,
                 "semaforo": ultima.semaforo() if ultima else "gris",
-                "meta": ultima.meta_aplicable() if ultima else (version.metas.first() if version else None),
+                "meta": meta,
                 "puede_cargar": puede_cargar_area(self.request.user, self.object.area),
                 "anio": anio or "",
                 "anios": sorted({m.periodo.anio for m in (version.mediciones.all() if version else [])}, reverse=True),

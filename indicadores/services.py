@@ -1,6 +1,8 @@
 from decimal import Decimal, InvalidOperation
 
-from .models import IndicadorVersion, Medicion
+from django.db.models import Prefetch
+
+from .models import Indicador, IndicadorVersion, Medicion
 
 
 def _dec(value):
@@ -137,32 +139,48 @@ def serie_desde_mediciones(version, mediciones):
     return {"labels": labels, "values": values, "colors": colors, "detalles": detalles}
 
 
+def indicadores_precargados(qs=None):
+    mediciones = (
+        Medicion.objects.filter(estado=Medicion.Estado.PUBLICADO)
+        .select_related("periodo", "indicador_version")
+        .prefetch_related("indicador_version__metas")
+        .order_by("periodo__fecha_inicio")
+    )
+    versiones = IndicadorVersion.objects.filter(
+        fecha_vigencia_hasta__isnull=True
+    ).prefetch_related("metas", Prefetch("mediciones", queryset=mediciones))
+    base = Indicador.objects.all() if qs is None else qs
+    return base.select_related("dimension", "area", "responsable").prefetch_related(
+        Prefetch("versiones", queryset=versiones)
+    )
+
+
+def _mediciones_publicadas(version):
+    return [
+        medicion
+        for medicion in version.mediciones.all()
+        if medicion.estado == Medicion.Estado.PUBLICADO
+    ]
+
+
 def serie_chart(indicador):
     version = indicador.version_vigente()
     if not version:
         return {"labels": [], "values": [], "colors": [], "detalles": []}
-    mediciones = version.mediciones.filter(estado=Medicion.Estado.PUBLICADO).select_related(
-        "periodo", "indicador_version"
-    ).prefetch_related("indicador_version__metas")
-    return serie_desde_mediciones(version, mediciones)
+    return serie_desde_mediciones(version, _mediciones_publicadas(version))
 
 
 def ultima_medicion_publicada(indicador):
     version = indicador.version_vigente()
     if not version:
         return None
-    return (
-        version.mediciones.filter(estado="publicado")
-        .select_related("periodo", "indicador_version")
-        .order_by("-periodo__fecha_fin")
-        .first()
-    )
+    mediciones = _mediciones_publicadas(version)
+    if not mediciones:
+        return None
+    return max(mediciones, key=lambda medicion: medicion.periodo.fecha_fin)
 
 
-def resumen_area(area):
-    indicadores = list(
-        area.indicadores.filter(activo=True).select_related("dimension", "area")
-    )
+def _resumen_de_indicadores(area, indicadores):
     verdes = rojos = grises = 0
     filas = []
     for indicador in indicadores:
@@ -179,7 +197,8 @@ def resumen_area(area):
         if medicion:
             meta = medicion.meta_aplicable()
         elif version:
-            meta = version.metas.order_by("-fecha_inicio_meta").first()
+            metas = list(version.metas.all())
+            meta = max(metas, key=lambda item: item.fecha_inicio_meta) if metas else None
         filas.append({
             "indicador": indicador,
             "medicion": medicion,
@@ -198,3 +217,21 @@ def resumen_area(area):
         "pct_meta": pct,
         "filas": filas,
     }
+
+
+def resumen_area(area):
+    indicadores = list(indicadores_precargados(area.indicadores.filter(activo=True)))
+    return _resumen_de_indicadores(area, indicadores)
+
+
+def resumenes_areas(areas):
+    areas = list(areas)
+    if not areas:
+        return []
+    indicadores = list(
+        indicadores_precargados().filter(activo=True, area__in=areas)
+    )
+    por_area = {}
+    for indicador in indicadores:
+        por_area.setdefault(indicador.area_id, []).append(indicador)
+    return [_resumen_de_indicadores(area, por_area.get(area.pk, [])) for area in areas]

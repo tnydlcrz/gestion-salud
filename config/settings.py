@@ -86,12 +86,14 @@ DATABASES = {
 if DATABASES["default"].get("ENGINE", "").endswith("postgresql"):
     DATABASES["default"].setdefault("OPTIONS", {})
     host = DATABASES["default"].get("HOST") or ""
+    DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 5)
     if not DEBUG or "neon.tech" in host:
         DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
-        DATABASES["default"]["CONN_MAX_AGE"] = 0
+        DATABASES["default"]["CONN_MAX_AGE"] = 60
+        DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     else:
         DATABASES["default"]["OPTIONS"].setdefault("sslmode", "prefer")
-    DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 5)
 
 AUTH_USER_MODEL = "cuentas.Usuario"
 
@@ -104,6 +106,7 @@ LANGUAGE_CODE = "es-ar"
 TIME_ZONE = "America/Argentina/Buenos_Aires"
 USE_I18N = True
 USE_TZ = True
+DEFAULT_CHARSET = "utf-8"
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
