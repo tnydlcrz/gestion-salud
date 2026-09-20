@@ -177,7 +177,7 @@ class PermisoTests(TestCase):
             resp = self.client.get(reverse("tablero:area", args=[self.uep.pk]))
         self.assertContains(resp, "Indicador mosaico")
         self.assertContains(resp, f'id="chart-{indicador.pk}"')
-        self.assertContains(resp, "chart.js")
+        self.assertContains(resp, "chart.umd.min.js")
         self.assertContains(resp, "Meta")
         self.assertContains(resp, "s/d")
         self.assertLessEqual(len(ctx.captured_queries), 15)

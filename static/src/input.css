@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { font-family: 'Segoe UI', Calibri, sans-serif; }
+.dot { width: .65rem; height: .65rem; border-radius: 9999px; display: inline-block; }
+.dot-verde { background: #0f766e; }
+.dot-rojo { background: #b91c1c; }
+.dot-gris { background: #94a3b8; }
+.input-field {
+  width: 100%;
+  border: 1px solid #d6deea;
+  border-radius: .5rem;
+  padding: .65rem .8rem;
+  background: #fff;
+  color: #0c1c2e;
+}
+.input-field:focus { outline: 2px solid #1d4463; outline-offset: 1px; }

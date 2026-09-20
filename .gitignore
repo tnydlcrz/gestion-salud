@@ -33,7 +33,8 @@ htmlcov/
 Thumbs.db
 .DS_Store
 
-# Insumos internos del ministerio (el repo de GitHub es público;
+node_modules/
+package-lock.json
 # no hace falta subirlos: el tablero ya tiene los indicadores en el seed)
 *.pdf
 *.docx
