@@ -45,6 +45,25 @@ h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; 
 .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 99px; margin-right: .35rem; }
 .dot-verde { background: #0f766e; } .dot-rojo { background: #b91c1c; } .dot-gris { background: #94a3b8; }
 .login-panel { background: #0c1c2e; color: #f8fafc; border-radius: 0; min-height: 80vh; padding: 3.5rem; }
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextInput"] input:focus,
+div[data-testid="stNumberInput"] input {
+  background: #ffffff !important;
+  color: #0c1c2e !important;
+  caret-color: #0c1c2e !important;
+  -webkit-text-fill-color: #0c1c2e !important;
+  border: 1px solid #d6deea !important;
+}
+div[data-testid="stTextInput"] input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+</style>
+"""
+
+CSS_LOGIN = """
+<style>
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] { display: none !important; }
 </style>
 """
 
@@ -85,10 +104,7 @@ def figura(serie, alto=120):
 
 
 def pagina_login():
-    st.markdown(
-        CSS + "[data-testid='stSidebar']{display:none} [data-testid='stSidebarCollapsedControl']{display:none}",
-        unsafe_allow_html=True,
-    )
+    st.markdown(CSS_LOGIN, unsafe_allow_html=True)
     izq, der = st.columns([1.05, 1], gap="large")
     with izq:
         st.markdown(
