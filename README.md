@@ -47,4 +47,19 @@ Camino recomendado: **Neon** (PostgreSQL, no vence a los 30 días) + **Render** 
 - Neon también puede dormir el cómputo: el primer query del día a veces suma unos segundos.
 - No usar el Postgres free de Render: caduca a los 30 días.
 
-Koyeb es la alternativa (duerme a la 1 h, cold start más corto). Misma app, mismas variables, puerto 8000.
+## Piloto Streamlit (misma base)
+
+La UI ejecutiva también corre en Streamlit contra **la misma Neon** (sin migrar tablas).
+
+```powershell
+pip install -r requirements-streamlit.txt
+streamlit run streamlit_app.py
+```
+
+En [Streamlit Cloud](https://share.streamlit.io): New app → este repo → `streamlit_app.py`. En Secrets:
+
+```
+DATABASE_URL = "postgresql://...neon.tech/neondb?sslmode=require"
+```
+
+Usuarios y clave: los mismos del seed.

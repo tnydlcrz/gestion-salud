@@ -1,0 +1,1 @@
+# Capa Streamlit del tablero. Lee y escribe las tablas Django existentes.
