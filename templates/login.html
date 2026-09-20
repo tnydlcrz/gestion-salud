@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Ingresar{% endblock %}
+{% block unauth %}
+<div class="min-h-screen grid lg:grid-cols-2">
+  <div class="hidden lg:flex flex-col justify-between bg-ink-900 text-slate-100 p-14">
+    <div>
+      <p class="text-[11px] uppercase tracking-[0.22em] text-gold-400">Ministerio de Salud Pública · Corrientes</p>
+      <h1 class="font-serif text-5xl mt-8 leading-tight">Tablero de<br>indicadores de gestión</h1>
+      <p class="mt-6 max-w-md text-slate-300 leading-relaxed">Seguimiento de metas por área, con semáforo de cumplimiento y evolución en el tiempo.</p>
+    </div>
+    <p class="text-xs text-slate-500">Acceso restringido a usuarios habilitados.</p>
+  </div>
+  <div class="flex items-center justify-center p-8">
+    <form method="post" class="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+      {% csrf_token %}
+      <h2 class="font-serif text-2xl">Ingresar</h2>
+      <p class="text-sm text-slate-500 mt-1 mb-6">Use el correo institucional.</p>
+      {% if form.errors %}
+      <p class="mb-4 text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">Correo o contraseña incorrectos.</p>
+      {% endif %}
+      <label class="block text-sm mb-1" for="id_username">Correo</label>
+      <input class="input-field mb-4" type="email" name="username" id="id_username" autocomplete="username" required>
+      <label class="block text-sm mb-1" for="id_password">Contraseña</label>
+      <input class="input-field mb-6" type="password" name="password" id="id_password" autocomplete="current-password" required>
+      <button class="w-full bg-ink-900 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-ink-800">Entrar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

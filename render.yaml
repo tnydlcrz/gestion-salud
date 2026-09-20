@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: tablero-salud
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: bash start.sh
+    healthCheckPath: /salud/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

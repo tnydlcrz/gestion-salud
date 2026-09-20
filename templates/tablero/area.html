@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ area.nombre }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<p class="text-[11px] uppercase tracking-[0.2em] text-ink-700/70">Área</p>
+<h1 class="font-serif text-4xl mt-1">{{ area.nombre }}</h1>
+<p class="text-slate-600 mt-2">
+  {% if resumen.pct_meta is not None %}{{ resumen.pct_meta }}% de indicadores en meta.{% endif %}
+  <span class="dot dot-verde ml-3 mr-1"></span>{{ resumen.verdes }}
+  <span class="dot dot-rojo ml-3 mr-1"></span>{{ resumen.rojos }}
+  <span class="dot dot-gris ml-3 mr-1"></span>{{ resumen.grises }}
+  <span class="ml-4 text-xs text-slate-400">VP valor de prueba · s/d sin dato · n/a no aplica</span>
+</p>
+
+{% for dimension, filas in por_dimension.items %}
+<section class="mt-10">
+  <h2 class="text-xs uppercase tracking-[0.18em] text-ink-700/60">{{ dimension.nombre }}</h2>
+  <div class="mt-3 grid gap-4 md:grid-cols-2">
+    {% for fila in filas %}
+    <article class="bg-white border border-stone-200 rounded-2xl p-4 hover:border-ink-700/30 hover:shadow-sm transition">
+      <a href="{% url 'tablero:ficha' fila.indicador.pk %}" class="block">
+        <div class="flex items-start justify-between gap-3">
+          <p class="font-medium leading-snug truncate" title="{{ fila.indicador.nombre }}">{{ fila.indicador.nombre }}</p>
+          <span class="dot dot-{{ fila.semaforo }} mt-1 shrink-0"></span>
+        </div>
+        {% if fila.indicador.area_direccion %}
+        <p class="text-[11px] uppercase tracking-wide text-slate-400 mt-0.5 truncate">{{ fila.indicador.area_direccion }}</p>
+        {% endif %}
+        <p class="text-sm text-slate-500 mt-1">
+          {% if fila.medicion %}
+            <span class="font-serif text-lg text-ink-900">{{ fila.medicion.valor_calculado|floatformat:1 }}</span>
+            <span class="text-slate-400">{{ fila.version.unidad_resultado }}</span>
+            · {{ fila.medicion.periodo.label }}
+          {% else %}
+            Sin medición publicada
+          {% endif %}
+        </p>
+        {% if fila.meta_texto %}
+        <p class="text-xs text-slate-400 mt-1">Meta {{ fila.meta_texto }}</p>
+        {% endif %}
+        <p class="text-xs text-slate-400 mt-0.5">{{ fila.nd_texto }}</p>
+      </a>
+      <div class="mt-3">
+        {% include "tablero/_chart.html" with chart_id=fila.chart_id chart=fila.chart height_class="h-28" compact=True unidad=fila.version.unidad_resultado %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

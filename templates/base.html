@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Tablero de indicadores{% endblock %} · MSP Corrientes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Source Sans 3', 'Segoe UI', 'sans-serif'],
+          },
+          colors: {
+            ink: { 900: '#0c1c2e', 800: '#143049', 700: '#1d4463' },
+            gold: { 400: '#d4b45a', 500: '#c9a227' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Source Sans 3', sans-serif; }
+    .dot { width: .65rem; height: .65rem; border-radius: 9999px; display: inline-block; }
+    .dot-verde { background: #0f766e; }
+    .dot-rojo { background: #b91c1c; }
+    .dot-gris { background: #94a3b8; }
+    .input-field {
+      width: 100%;
+      border: 1px solid #d6deea;
+      border-radius: .5rem;
+      padding: .65rem .8rem;
+      background: #fff;
+      color: #0c1c2e;
+    }
+    .input-field:focus { outline: 2px solid #1d4463; outline-offset: 1px; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-[#f4f1ea] text-ink-900 antialiased">
+  {% if user.is_authenticated %}
+  <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
+    <aside class="bg-ink-900 text-slate-100 px-6 py-8">
+      <p class="text-[11px] uppercase tracking-[0.22em] text-gold-400">Ministerio de Salud Pública</p>
+      <p class="font-serif text-2xl mt-1 leading-tight">Tablero de<br>indicadores</p>
+      <p class="text-xs text-slate-400 mt-3">Corrientes</p>
+      <nav class="mt-10 space-y-1 text-sm">
+        <a href="{% url 'tablero:home' %}" class="block rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'home' %}bg-ink-700 text-white{% else %}text-slate-300 hover:bg-ink-800{% endif %}">Vista ejecutiva</a>
+        {% for area in areas_nav %}
+        <a href="{% url 'tablero:area' area.pk %}" class="block rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'area' and request.resolver_match.kwargs.pk == area.pk %}bg-ink-700 text-white{% else %}text-slate-300 hover:bg-ink-800{% endif %}">{{ area.nombre }}</a>
+        {% endfor %}
+      </nav>
+      <div class="mt-12 pt-6 border-t border-white/10 text-xs text-slate-400">
+        <p class="text-slate-200">{{ user.nombre|default:user.email }}</p>
+        <form method="post" action="{% url 'logout' %}" class="mt-3">
+          {% csrf_token %}
+          <button class="text-gold-400 hover:underline">Cerrar sesión</button>
+        </form>
+      </div>
+    </aside>
+    <main class="px-6 py-8 lg:px-12 lg:py-10">
+      {% if messages %}
+      <ul class="mb-6 space-y-2">
+        {% for message in messages %}
+        <li class="rounded-lg bg-teal-50 text-teal-900 px-4 py-2 text-sm">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+    {% block unauth %}{% endblock %}
+  {% endif %}
+</body>
+</html>

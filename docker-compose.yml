@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: tablero
+      POSTGRES_USER: tablero
+      POSTGRES_PASSWORD: tablero
+    ports:
+      - "5433:5432"
+    volumes:
+      - tablero_pg:/var/lib/postgresql/data
+
+volumes:
+  tablero_pg:

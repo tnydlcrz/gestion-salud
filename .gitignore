@@ -1,0 +1,40 @@
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials.json
+secrets.json
+
+# Volcados de base (incluye copias hacia Neon)
+*.sql
+*.dump
+*.bak
+
+# Python / Django
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+staticfiles/
+media/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editores y SO
+.idea/
+.vscode/
+*.log
+Thumbs.db
+.DS_Store
+
+# Insumos internos del ministerio (el repo de GitHub es público;
+# no hace falta subirlos: el tablero ya tiene los indicadores en el seed)
+*.pdf
+*.docx
+*.xlsx

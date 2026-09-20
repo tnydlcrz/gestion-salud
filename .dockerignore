@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.env
+staticfiles
+*.log
+.idea
+.vscode
+*.pdf
+*.docx
+*.xlsx
+docs

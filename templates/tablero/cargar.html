@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Cargar · {{ indicador.nombre }}{% endblock %}
+{% block content %}
+<p class="text-[11px] uppercase tracking-[0.2em] text-ink-700/70">
+  <a href="{% url 'tablero:ficha' indicador.pk %}" class="hover:underline">{{ indicador.nombre }}</a>
+</p>
+<h1 class="font-serif text-3xl mt-1">Cargar medición</h1>
+<p class="text-slate-600 mt-2">{{ version.formula_calculo }}</p>
+
+<form method="post" class="mt-8 max-w-xl bg-white border border-stone-200 rounded-2xl p-6 space-y-4">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div>
+    <label class="block text-sm mb-1" for="{{ form.periodo.id_for_label }}">{{ form.periodo.label }}</label>
+    {{ form.periodo }}
+    {{ form.periodo.errors }}
+  </div>
+  <div>
+    <label class="block text-sm mb-1" for="{{ form.numerador_valor.id_for_label }}">{{ form.numerador_valor.label }}</label>
+    {{ form.numerador_valor }}
+    {% if form.numerador_valor.help_text %}
+    <p class="text-xs text-slate-400 mt-1">{{ form.numerador_valor.help_text }}</p>
+    {% endif %}
+    {{ form.numerador_valor.errors }}
+  </div>
+  {% if version.tipo_calculo == 'razon' %}
+  <div>
+    <label class="block text-sm mb-1" for="{{ form.denominador_valor.id_for_label }}">{{ form.denominador_valor.label }}</label>
+    {{ form.denominador_valor }}
+    {% if form.denominador_valor.help_text %}
+    <p class="text-xs text-slate-400 mt-1">{{ form.denominador_valor.help_text }}</p>
+    {% endif %}
+    {{ form.denominador_valor.errors }}
+  </div>
+  {% else %}
+    {{ form.denominador_valor }}
+  {% endif %}
+  <div>
+    <label class="block text-sm mb-1" for="{{ form.conclusion.id_for_label }}">{{ form.conclusion.label }}</label>
+    {{ form.conclusion }}
+  </div>
+  <label class="flex items-start gap-2 text-sm text-slate-600">
+    {{ form.es_prueba }}
+    <span>
+      {{ form.es_prueba.label }}
+      {% if form.es_prueba.help_text %}
+      <span class="block text-xs text-slate-400 mt-0.5">{{ form.es_prueba.help_text }}</span>
+      {% endif %}
+    </span>
+  </label>
+  <div>
+    <label class="block text-sm mb-1" for="{{ form.estado.id_for_label }}">Estado</label>
+    {{ form.estado }}
+  </div>
+  <div class="flex gap-3 pt-2">
+    <button class="bg-ink-900 text-white rounded-lg px-4 py-2 text-sm">Guardar</button>
+    <a href="{% url 'tablero:ficha' indicador.pk %}" class="text-sm px-4 py-2 text-slate-500">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

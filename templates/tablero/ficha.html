@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ indicador.nombre }}{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<p class="text-[11px] uppercase tracking-[0.2em] text-ink-700/70">
+  <a href="{% url 'tablero:area' indicador.area.pk %}" class="hover:underline">{{ indicador.area.nombre }}</a>
+  · {{ indicador.dimension.nombre }}
+</p>
+<div class="flex flex-wrap items-start justify-between gap-4 mt-1">
+  <h1 class="font-serif text-3xl max-w-3xl">{{ indicador.nombre }}</h1>
+  {% if puede_cargar %}
+  <a href="{% url 'tablero:cargar' indicador.pk %}" class="bg-ink-900 text-white text-sm rounded-lg px-4 py-2 hover:bg-ink-800">Cargar medición</a>
+  {% endif %}
+</div>
+
+<section class="mt-8 grid gap-4 md:grid-cols-3">
+  <div class="bg-white border border-stone-200 rounded-2xl p-5">
+    <p class="text-[11px] uppercase tracking-wider text-slate-400">Último valor</p>
+    <p class="font-serif text-4xl mt-2">
+      {% if ultima and ultima.valor_calculado is not None %}
+        {{ ultima.valor_calculado|floatformat:1 }}<span class="text-lg text-slate-400 ml-1">{{ version.unidad_resultado }}</span>
+      {% else %}—{% endif %}
+    </p>
+    <p class="text-sm text-slate-500 mt-2">{% if ultima %}{{ ultima.periodo.label }}{% else %}Sin publicación{% endif %}</p>
+  </div>
+  <div class="bg-white border border-stone-200 rounded-2xl p-5">
+    <p class="text-[11px] uppercase tracking-wider text-slate-400">Meta</p>
+    <p class="font-serif text-2xl mt-2">
+      {% if meta %}
+        {% if version.meta_tipo == 'rango' %}{{ meta.meta_min|floatformat:0 }} – {{ meta.meta_max|floatformat:0 }}
+        {% elif version.meta_tipo == 'maximo' %}≤ {{ meta.meta_max|floatformat:0 }}
+        {% elif version.meta_tipo == 'sostener' %}≥ {{ meta.meta_min|floatformat:0 }}
+        {% else %}≥ {{ meta.meta_min|floatformat:0 }}{% endif %}
+        <span class="text-base text-slate-400">{{ version.unidad_resultado }}</span>
+      {% else %}Seguimiento{% endif %}
+    </p>
+    <p class="text-sm text-slate-500 mt-2">{{ version.get_frecuencia_display }} · {{ version.get_meta_tipo_display }}</p>
+  </div>
+  <div class="bg-white border border-stone-200 rounded-2xl p-5">
+    <p class="text-[11px] uppercase tracking-wider text-slate-400">Semáforo</p>
+    <p class="mt-3 flex items-center gap-2 font-medium capitalize">
+      <span class="dot dot-{{ semaforo }}"></span>{{ semaforo }}
+    </p>
+    <p class="text-sm text-slate-500 mt-2">{{ version.get_sentido_mejora_display }}</p>
+  </div>
+</section>
+
+<section class="mt-8 bg-white border border-stone-200 rounded-2xl p-6">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div>
+      <h2 class="font-serif text-xl">Evolución</h2>
+      {% if indicador.etiqueta_area_direccion %}
+      <p class="text-sm text-slate-500 mt-1">Área/Dirección · {{ indicador.etiqueta_area_direccion }}</p>
+      {% endif %}
+    </div>
+    <form hx-get="{% url 'tablero:ficha' indicador.pk %}" hx-target="#chart-panel" hx-swap="innerHTML" class="text-sm">
+      <label class="text-slate-500 mr-2">Año</label>
+      <select name="anio" class="input-field w-auto py-1" onchange="this.form.requestSubmit()">
+        <option value="">Todos</option>
+        {% for y in anios %}
+        <option value="{{ y }}" {% if anio == y|stringformat:'s' %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <div id="chart-panel">
+    {% include "tablero/_chart.html" with chart_id="evolucion" chart=chart unidad=version.unidad_resultado %}
+  </div>
+  {% if nd_ultima %}
+  <p class="text-sm text-slate-500 mt-4">{{ nd_ultima }}</p>
+  {% endif %}
+  <p class="text-[11px] text-slate-400 mt-1">VP valor de prueba · s/d sin dato · n/a no aplica</p>
+</section>
+
+{% if filas_nd %}
+<section class="mt-6 bg-white border border-stone-200 rounded-2xl p-6 overflow-x-auto">
+  <h2 class="text-[11px] uppercase tracking-wider text-slate-400 mb-3">Mediciones</h2>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-slate-400">
+        <th class="pb-2 font-normal">Período</th>
+        <th class="pb-2 font-normal">Valor</th>
+        <th class="pb-2 font-normal">N / D</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in filas_nd %}
+      <tr class="border-t border-stone-100">
+        <td class="py-2">{{ fila.medicion.periodo.label }}</td>
+        <td class="py-2">
+          {% if fila.medicion.valor_calculado is not None %}
+            {{ fila.medicion.valor_calculado|floatformat:1 }} {{ version.unidad_resultado }}
+          {% else %}s/d{% endif %}
+        </td>
+        <td class="py-2 text-slate-500">{{ fila.nd }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if ultima and ultima.conclusion %}
+<section class="mt-6 bg-white border border-stone-200 rounded-2xl p-6">
+  <h2 class="text-[11px] uppercase tracking-wider text-slate-400">Conclusión</h2>
+  <p class="mt-2 leading-relaxed text-slate-700">{{ ultima.conclusion }}</p>
+</section>
+{% endif %}
+
+{% if version %}
+<section class="mt-6 text-sm text-slate-600">
+  <p><span class="text-slate-400">Fórmula.</span> {{ version.formula_calculo }}</p>
+  {% if version.fuente_datos %}<p class="mt-1"><span class="text-slate-400">Fuente.</span> {{ version.fuente_datos }}</p>{% endif %}
+  {% if version.objetivo_operativo %}<p class="mt-1"><span class="text-slate-400">Objetivo.</span> {{ version.objetivo_operativo }}</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

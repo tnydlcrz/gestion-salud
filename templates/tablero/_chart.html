@@ -1,0 +1,83 @@
+<div class="{{ height_class|default:'h-72' }}">
+  <canvas
+    id="{{ chart_id }}"
+    class="js-tablero-chart"
+    data-chart="{{ chart }}"
+    data-compact="{{ compact|yesno:'true,false' }}"
+    data-unidad="{{ unidad|default:'' }}"
+  ></canvas>
+</div>
+<script>
+  (function () {
+    const el = document.getElementById("{{ chart_id }}");
+    if (!el || typeof Chart === "undefined") return;
+    const existing = Chart.getChart(el);
+    if (existing) existing.destroy();
+    const data = JSON.parse(el.dataset.chart);
+    const compact = el.dataset.compact === "true";
+    const unidad = (el.dataset.unidad || "").trim();
+    new Chart(el, {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "Valor",
+          data: data.values,
+          borderColor: "#143049",
+          backgroundColor: "rgba(20, 48, 73, 0.08)",
+          fill: true,
+          tension: 0.25,
+          pointRadius: compact ? 3 : 4,
+          pointHoverRadius: compact ? 5 : 6,
+          pointHitRadius: compact ? 14 : 10,
+          pointBackgroundColor: data.colors && data.colors.length ? data.colors : "#c9a227",
+          pointBorderColor: data.colors && data.colors.length ? data.colors : "#c9a227",
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            displayColors: false,
+            callbacks: {
+              title: function (items) {
+                return items[0] ? items[0].label : "";
+              },
+              label: function (item) {
+                const valor = item.parsed.y;
+                const lineas = [];
+                if (valor == null) {
+                  lineas.push("s/d");
+                } else {
+                  const texto = Number(valor).toLocaleString("es-AR", {
+                    maximumFractionDigits: 1,
+                  });
+                  lineas.push(unidad ? texto + " " + unidad : texto);
+                }
+                const det = data.detalles && data.detalles[item.dataIndex];
+                if (det) {
+                  lineas.push("N " + det.n + " · D " + det.d + (det.vp ? " · VP" : ""));
+                }
+                return lineas;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: "#64748b", maxRotation: 0, display: !compact, autoSkip: true, maxTicksLimit: compact ? 4 : 8 },
+            grid: { display: false },
+          },
+          y: {
+            ticks: { color: "#64748b", font: { size: compact ? 10 : 12 } },
+            grid: { color: "#e7e5e4" },
+          }
+        }
+      }
+    });
+  })();
+</script>
