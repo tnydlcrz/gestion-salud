@@ -4,9 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Tablero de indicadores{% endblock %} · MSP Corrientes</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <script>
@@ -14,8 +11,8 @@
       theme: {
         extend: {
           fontFamily: {
-            serif: ['Fraunces', 'Georgia', 'serif'],
-            sans: ['Source Sans 3', 'Segoe UI', 'sans-serif'],
+            serif: ['Georgia', 'Times New Roman', 'serif'],
+            sans: ['Segoe UI', 'Calibri', 'sans-serif'],
           },
           colors: {
             ink: { 900: '#0c1c2e', 800: '#143049', 700: '#1d4463' },
@@ -26,7 +23,7 @@
     }
   </script>
   <style>
-    body { font-family: 'Source Sans 3', sans-serif; }
+    body { font-family: 'Segoe UI', Calibri, sans-serif; }
     .dot { width: .65rem; height: .65rem; border-radius: 9999px; display: inline-block; }
     .dot-verde { background: #0f766e; }
     .dot-rojo { background: #b91c1c; }

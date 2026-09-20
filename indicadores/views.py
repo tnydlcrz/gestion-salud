@@ -13,8 +13,10 @@ from .forms import MedicionForm
 from .models import AreaDireccion, Indicador, Medicion
 from .services import (
     indicadores_precargados,
+    meta_para,
     resumen_area,
     resumenes_areas,
+    semaforo,
     serie_chart,
     serie_desde_mediciones,
     texto_nd,
@@ -33,6 +35,13 @@ class AreaPermisoMixin(LoginRequiredMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+class CachedObjectMixin:
+    def get_object(self, queryset=None):
+        if not hasattr(self, "_cached_object"):
+            self._cached_object = super().get_object(queryset)
+        return self._cached_object
+
+
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "tablero/home.html"
 
@@ -42,13 +51,13 @@ class HomeView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class AreaDetailView(AreaPermisoMixin, DetailView):
+class AreaDetailView(AreaPermisoMixin, CachedObjectMixin, DetailView):
     model = AreaDireccion
     template_name = "tablero/area.html"
     context_object_name = "area"
 
     def area_objeto(self):
-        return get_object_or_404(AreaDireccion, pk=self.kwargs["pk"])
+        return self.get_object()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -65,17 +74,16 @@ class AreaDetailView(AreaPermisoMixin, DetailView):
         return ctx
 
 
-class IndicadorDetailView(AreaPermisoMixin, DetailView):
+class IndicadorDetailView(AreaPermisoMixin, CachedObjectMixin, DetailView):
     model = Indicador
     template_name = "tablero/ficha.html"
     context_object_name = "indicador"
 
+    def get_queryset(self):
+        return indicadores_precargados()
+
     def area_objeto(self):
-        self.object = get_object_or_404(
-            indicadores_precargados(),
-            pk=self.kwargs["pk"],
-        )
-        return self.object.area
+        return self.get_object().area
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -88,13 +96,13 @@ class IndicadorDetailView(AreaPermisoMixin, DetailView):
                 mediciones = [m for m in mediciones if m.periodo.anio == int(anio)]
         ultima = ultima_medicion_publicada(self.object)
         metas = list(version.metas.all()) if version else []
-        meta = ultima.meta_aplicable() if ultima else (metas[0] if metas else None)
+        meta = meta_para(version, ultima) if ultima else (metas[0] if metas else None)
         ctx.update(
             {
                 "version": version,
                 "mediciones": mediciones,
                 "ultima": ultima,
-                "semaforo": ultima.semaforo() if ultima else "gris",
+                "semaforo": semaforo(version, ultima.valor_calculado, meta) if ultima else "gris",
                 "meta": meta,
                 "puede_cargar": puede_cargar_area(self.request.user, self.object.area),
                 "anio": anio or "",

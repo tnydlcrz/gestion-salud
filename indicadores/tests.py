@@ -2,7 +2,9 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from cuentas.models import UsuarioArea
@@ -171,9 +173,11 @@ class PermisoTests(TestCase):
             fecha_fin_meta=date(2026, 12, 31),
         )
         self.client.force_login(self.area_user)
-        resp = self.client.get(reverse("tablero:area", args=[self.uep.pk]))
+        with CaptureQueriesContext(connection) as ctx:
+            resp = self.client.get(reverse("tablero:area", args=[self.uep.pk]))
         self.assertContains(resp, "Indicador mosaico")
         self.assertContains(resp, f'id="chart-{indicador.pk}"')
         self.assertContains(resp, "chart.js")
         self.assertContains(resp, "Meta")
         self.assertContains(resp, "s/d")
+        self.assertLessEqual(len(ctx.captured_queries), 15)

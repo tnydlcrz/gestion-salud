@@ -86,12 +86,18 @@ DATABASES = {
 if DATABASES["default"].get("ENGINE", "").endswith("postgresql"):
     DATABASES["default"].setdefault("OPTIONS", {})
     host = DATABASES["default"].get("HOST") or ""
+    DATABASES["default"]["OPTIONS"].pop("channel_binding", None)
     DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 5)
-    if not DEBUG or "neon.tech" in host:
+    if "neon.tech" in host:
+        # El pooler de Neon no debe reutilizar conexiones de Django:
+        # CONN_MAX_AGE > 0 deja sockets muertos y cada clic espera el timeout.
+        DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
+        DATABASES["default"]["CONN_MAX_AGE"] = 0
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    elif not DEBUG:
         DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
         DATABASES["default"]["CONN_MAX_AGE"] = 60
         DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
-        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     else:
         DATABASES["default"]["OPTIONS"].setdefault("sslmode", "prefer")
 

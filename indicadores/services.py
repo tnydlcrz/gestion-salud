@@ -117,6 +117,20 @@ def texto_nd(medicion, version):
     return " · ".join(partes)
 
 
+def meta_para(version, medicion):
+    if not version or not medicion or not medicion.fecha_corte:
+        return None
+    corte = medicion.fecha_corte
+    candidatas = [
+        meta
+        for meta in version.metas.all()
+        if meta.fecha_inicio_meta <= corte <= meta.fecha_fin_meta
+    ]
+    if not candidatas:
+        return None
+    return max(candidatas, key=lambda meta: meta.fecha_inicio_meta)
+
+
 def serie_desde_mediciones(version, mediciones):
     labels = []
     values = []
@@ -127,7 +141,7 @@ def serie_desde_mediciones(version, mediciones):
         labels.append(medicion.periodo.label)
         valor = float(medicion.valor_calculado) if medicion.valor_calculado is not None else None
         values.append(valor)
-        color = semaforo(version, medicion.valor_calculado, medicion.meta_aplicable())
+        color = semaforo(version, medicion.valor_calculado, meta_para(version, medicion))
         colors.append(COLORES_SEMAFORO[color])
         detalles.append(
             {
@@ -186,19 +200,19 @@ def _resumen_de_indicadores(area, indicadores):
     for indicador in indicadores:
         version = indicador.version_vigente()
         medicion = ultima_medicion_publicada(indicador)
-        color = medicion.semaforo() if medicion else "gris"
+        meta = meta_para(version, medicion) if medicion else None
+        if meta is None and version:
+            metas = list(version.metas.all())
+            meta = max(metas, key=lambda item: item.fecha_inicio_meta) if metas else None
+        color = (
+            semaforo(version, medicion.valor_calculado, meta) if medicion else "gris"
+        )
         if color == "verde":
             verdes += 1
         elif color == "rojo":
             rojos += 1
         else:
             grises += 1
-        meta = None
-        if medicion:
-            meta = medicion.meta_aplicable()
-        elif version:
-            metas = list(version.metas.all())
-            meta = max(metas, key=lambda item: item.fecha_inicio_meta) if metas else None
         filas.append({
             "indicador": indicador,
             "medicion": medicion,
