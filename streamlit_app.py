@@ -29,11 +29,26 @@ html, body, [class*="css"] { font-family: "Segoe UI", Calibri, sans-serif; }
 [data-testid="stSidebar"] { background: #0c1c2e; }
 [data-testid="stSidebar"] * { color: #e2e8f0 !important; }
 [data-testid="stSidebar"] .stMarkdown p { color: #e2e8f0 !important; }
+[data-testid="stSidebar"] .stButton { width: 100%; }
+[data-testid="stSidebar"] .stButton > button,
 [data-testid="stSidebar"] button {
-    background: transparent; border: 0; color: #cbd5e1 !important;
-    text-align: left; border-radius: 8px; padding: .45rem .7rem;
+    background: transparent !important;
+    border: 0 !important;
+    color: #cbd5e1 !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    display: flex !important;
+    width: 100% !important;
+    border-radius: 8px;
+    padding: .45rem .7rem;
 }
-[data-testid="stSidebar"] button:hover { background: #143049; }
+[data-testid="stSidebar"] .stButton > button > div,
+[data-testid="stSidebar"] button p {
+    width: 100% !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+}
+[data-testid="stSidebar"] button:hover { background: #143049 !important; }
 .eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #1d4463; opacity: .7; }
 h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; color: #0c1c2e; }
 .gold { color: #d4b45a; letter-spacing: .22em; font-size: 11px; text-transform: uppercase; }
@@ -44,8 +59,15 @@ h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; 
 .muted { color: #64748b; font-size: .9rem; }
 .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 99px; margin-right: .35rem; }
 .dot-verde { background: #0f766e; } .dot-rojo { background: #b91c1c; } .dot-gris { background: #94a3b8; }
+div[data-testid="stVerticalBlockBorderWrapper"],
+div[data-testid="stVerticalBlockBorderWrapper"] > div,
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMarkdown"],
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stPlotlyChart"],
+div[data-testid="stVerticalBlockBorderWrapper"] .js-plotly-plot,
+div[data-testid="stVerticalBlockBorderWrapper"] .plot-container {
+  background: #ffffff !important;
+}
 div[data-testid="stVerticalBlockBorderWrapper"] {
-  background: #fff;
   border: 1px solid #e7e5e4 !important;
   border-radius: 16px !important;
 }
@@ -105,11 +127,21 @@ def figura(serie, alto=120):
     fig.update_layout(
         height=alto,
         margin=dict(l=8, r=8, t=10, b=8),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
         showlegend=False,
-        xaxis=dict(showgrid=False, tickfont=dict(size=10, color="#94a3b8")),
-        yaxis=dict(gridcolor="#f1f5f9", zeroline=False, tickfont=dict(size=10, color="#94a3b8")),
+        xaxis=dict(
+            showgrid=True,
+            gridcolor="#e2e8f0",
+            zeroline=False,
+            tickfont=dict(size=10, color="#94a3b8"),
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="#e2e8f0",
+            zeroline=False,
+            tickfont=dict(size=10, color="#94a3b8"),
+        ),
         hovermode="x unified",
     )
     return fig
@@ -160,10 +192,10 @@ def sidebar(user):
         )
         st.caption("Corrientes")
         st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
-        if st.button("Vista ejecutiva", use_container_width=True):
+        if st.button("Vista ejecutiva", use_container_width=True, type="tertiary"):
             ir("home")
         for area in areas_visibles(user):
-            if st.button(area["nombre"], key=f"nav-{area['id']}", use_container_width=True):
+            if st.button(area["nombre"], key=f"nav-{area['id']}", use_container_width=True, type="tertiary"):
                 ir("area", area_id=area["id"])
         st.markdown("---")
         st.caption(user["nombre"])
