@@ -44,6 +44,18 @@ h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; 
 .muted { color: #64748b; font-size: .9rem; }
 .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 99px; margin-right: .35rem; }
 .dot-verde { background: #0f766e; } .dot-rojo { background: #b91c1c; } .dot-gris { background: #94a3b8; }
+div[data-testid="stVerticalBlockBorderWrapper"] {
+  background: #fff;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 16px !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] button {
+  justify-content: flex-start !important;
+  text-align: left !important;
+  color: #0c1c2e !important;
+  font-weight: 600 !important;
+  padding-left: 0 !important;
+}
 .login-panel { background: #0c1c2e; color: #f8fafc; border-radius: 0; min-height: 80vh; padding: 3.5rem; }
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextInput"] input:focus,
@@ -200,6 +212,47 @@ def vista_home(user):
         st.info("No hay áreas asignadas a esta cuenta.")
 
 
+def mosaico_tarjeta(item):
+    valor = "Sin medición publicada"
+    if item["ultima"] and item["ultima"]["valor_calculado"] is not None:
+        valor = f"{float(item['ultima']['valor_calculado']):.1f} {item.get('unidad_resultado') or ''}"
+    periodo = item["ultima"]["label"] if item["ultima"] else ""
+    extra = item.get("area_direccion") or ""
+    with st.container(border=True):
+        titulo, sema = st.columns([12, 1])
+        with titulo:
+            if st.button(item["nombre"], key=f"ind-{item['id']}", type="tertiary", use_container_width=True):
+                ir("ficha", indicador_id=item["id"])
+        with sema:
+            st.markdown(f'<span class="dot dot-{item["semaforo"]}"></span>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <p class="eyebrow" style="margin:0">{extra}</p>
+            <p class="serif" style="font-size:1.25rem;margin:.35rem 0 0">{valor}</p>
+            <p class="muted" style="margin:.1rem 0 0">{periodo}</p>
+            <p class="muted" style="margin:.1rem 0 .4rem">Meta {item['meta_texto'] or '—'} · {item['nd_texto']}</p>
+            """,
+            unsafe_allow_html=True,
+        )
+        evento = st.plotly_chart(
+            figura(item["serie"], 130),
+            use_container_width=True,
+            config={"displayModeBar": False},
+            on_select="rerun",
+            selection_mode="points",
+            key=f"ch-{item['id']}",
+        )
+        puntos = ()
+        seleccion = getattr(evento, "selection", None)
+        if seleccion is not None:
+            puntos = tuple(getattr(seleccion, "points", None) or ())
+        visto = f"ch-sel-{item['id']}"
+        anterior = st.session_state.get(visto)
+        st.session_state[visto] = puntos
+        if puntos and puntos != anterior:
+            ir("ficha", indicador_id=item["id"])
+
+
 def vista_area(user):
     area_id = st.session_state.get("area_id")
     if not area_id or not puede_ver_area(user, area_id):
@@ -231,27 +284,7 @@ def vista_area(user):
             cols = st.columns(2)
             for col, item in zip(cols, par):
                 with col:
-                    valor = "Sin medición publicada"
-                    if item["ultima"] and item["ultima"]["valor_calculado"] is not None:
-                        valor = f"{float(item['ultima']['valor_calculado']):.1f} {item.get('unidad_resultado') or ''}"
-                    periodo = item["ultima"]["label"] if item["ultima"] else ""
-                    extra = item.get("area_direccion") or ""
-                    st.markdown(
-                        f"""
-                        <div class="card">
-                          <p style="margin:0;font-weight:600">{item['nombre']}
-                            <span class="dot dot-{item['semaforo']}" style="float:right;margin-top:.35rem"></span></p>
-                          <p class="eyebrow" style="margin:.25rem 0 0">{extra}</p>
-                          <p class="serif" style="font-size:1.25rem;margin:.45rem 0 0">{valor}</p>
-                          <p class="muted" style="margin:.15rem 0 0">{periodo}</p>
-                          <p class="muted" style="margin:.15rem 0 0">Meta {item['meta_texto'] or '—'} · {item['nd_texto']}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                    st.plotly_chart(figura(item["serie"], 130), use_container_width=True, config={"displayModeBar": False})
-                    if st.button("Ver ficha", key=f"ind-{item['id']}"):
-                        ir("ficha", indicador_id=item["id"])
+                    mosaico_tarjeta(item)
 
 
 def vista_ficha(user):
