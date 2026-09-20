@@ -61,15 +61,21 @@ h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; 
 .dot-verde { background: #0f766e; } .dot-rojo { background: #b91c1c; } .dot-gris { background: #94a3b8; }
 div[data-testid="stVerticalBlockBorderWrapper"],
 div[data-testid="stVerticalBlockBorderWrapper"] > div,
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"],
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMarkdown"],
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stPlotlyChart"],
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="element-container"],
 div[data-testid="stVerticalBlockBorderWrapper"] .js-plotly-plot,
-div[data-testid="stVerticalBlockBorderWrapper"] .plot-container {
-  background: #ffffff !important;
+div[data-testid="stVerticalBlockBorderWrapper"] .plot-container,
+div[data-testid="stVerticalBlockBorderWrapper"] .main-svg {
+  background: #f4f1ea !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] {
   border: 1px solid #e7e5e4 !important;
   border-radius: 16px !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] {
+  gap: 0.2rem !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] button {
   justify-content: flex-start !important;
@@ -127,8 +133,8 @@ def figura(serie, alto=120):
     fig.update_layout(
         height=alto,
         margin=dict(l=8, r=8, t=10, b=8),
-        paper_bgcolor="#ffffff",
-        plot_bgcolor="#ffffff",
+        paper_bgcolor="#f4f1ea",
+        plot_bgcolor="#f4f1ea",
         showlegend=False,
         xaxis=dict(
             showgrid=True,
@@ -259,10 +265,12 @@ def mosaico_tarjeta(item):
             st.markdown(f'<span class="dot dot-{item["semaforo"]}"></span>', unsafe_allow_html=True)
         st.markdown(
             f"""
+            <div style="background:#f4f1ea;margin:0;padding:0 0 .15rem">
             <p class="eyebrow" style="margin:0">{extra}</p>
             <p class="serif" style="font-size:1.25rem;margin:.35rem 0 0">{valor}</p>
             <p class="muted" style="margin:.1rem 0 0">{periodo}</p>
-            <p class="muted" style="margin:.1rem 0 .4rem">Meta {item['meta_texto'] or '—'} · {item['nd_texto']}</p>
+            <p class="muted" style="margin:.1rem 0 0">Meta {item['meta_texto'] or '—'} · {item['nd_texto']}</p>
+            </div>
             """,
             unsafe_allow_html=True,
         )
@@ -273,6 +281,7 @@ def mosaico_tarjeta(item):
             on_select="rerun",
             selection_mode="points",
             key=f"ch-{item['id']}",
+            theme=None,
         )
         puntos = ()
         seleccion = getattr(evento, "selection", None)
