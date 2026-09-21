@@ -1,5 +1,4 @@
 import os
-from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
@@ -37,7 +36,6 @@ def _limpiar_url(url):
     return urlunparse(partes._replace(query=urlencode(query)))
 
 
-@lru_cache(maxsize=1)
 def _dsn():
     url = database_url()
     if not url:
@@ -45,15 +43,56 @@ def _dsn():
     return _limpiar_url(url)
 
 
-def connect():
-    return psycopg.connect(_dsn(), row_factory=dict_row, connect_timeout=8)
+def _make_pool():
+    from psycopg_pool import ConnectionPool
+
+    return ConnectionPool(
+        conninfo=_dsn(),
+        min_size=1,
+        max_size=5,
+        timeout=15,
+        kwargs={"row_factory": dict_row, "connect_timeout": 8},
+    )
+
+
+try:
+    import streamlit as st
+
+    _cached_pool = st.cache_resource(show_spinner=False)(_make_pool)
+except Exception:
+    _cached_pool = None
+
+
+def _pool():
+    if _cached_pool is None:
+        return None
+    try:
+        return _cached_pool()
+    except Exception:
+        return None
+
+
+def _run(sql, params, write=False):
+    pool = _pool()
+    if pool is not None:
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, params or ())
+                filas = list(cur.fetchall()) if cur.description else []
+            if write:
+                conn.commit()
+            return filas
+    with psycopg.connect(_dsn(), row_factory=dict_row, connect_timeout=8) as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params or ())
+            filas = list(cur.fetchall()) if cur.description else []
+        if write:
+            conn.commit()
+        return filas
 
 
 def fetch_all(sql, params=None):
-    with connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params or ())
-            return list(cur.fetchall())
+    return _run(sql, params, write=False)
 
 
 def fetch_one(sql, params=None):
@@ -62,7 +101,4 @@ def fetch_one(sql, params=None):
 
 
 def execute(sql, params=None):
-    with connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params or ())
-        conn.commit()
+    _run(sql, params, write=True)

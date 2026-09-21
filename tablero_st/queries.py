@@ -3,7 +3,13 @@ from .logic import calcular_valor, meta_para, semaforo, texto_meta, texto_nd
 
 
 def areas_visibles(user):
-    if user["es_admin"]:
+    from .data_cache import areas_visibles_cached
+
+    return areas_visibles_cached(int(user["id"]), bool(user["es_admin"]))
+
+
+def _areas_visibles_impl(user_id, es_admin):
+    if es_admin:
         return fetch_all("SELECT id, nombre FROM indicadores_areadireccion ORDER BY nombre")
     return fetch_all(
         """
@@ -13,7 +19,7 @@ def areas_visibles(user):
         WHERE ua.usuario_id = %s AND ua.fecha_baja IS NULL
         ORDER BY a.nombre
         """,
-        (user["id"],),
+        (user_id,),
     )
 
 
@@ -98,7 +104,7 @@ def _enriquecer(indicadores):
                 ultima["es_prueba"],
             )
             if ultima
-            else "N s/d · D s/d"
+            else "Numerador s/d · Denominador s/d"
         )
         serie = []
         for med in item["mediciones"]:
@@ -121,6 +127,12 @@ def _enriquecer(indicadores):
 
 
 def indicadores_de_area(area_id):
+    from .data_cache import indicadores_de_area_cached
+
+    return indicadores_de_area_cached(int(area_id))
+
+
+def _indicadores_de_area_impl(area_id):
     filas = fetch_all(
         """
         SELECT i.id, i.nombre, i.area_id, i.area_direccion, i.dimension_id,
@@ -141,6 +153,12 @@ def indicadores_de_area(area_id):
 
 
 def indicador_detalle(indicador_id):
+    from .data_cache import indicador_detalle_cached
+
+    return indicador_detalle_cached(int(indicador_id))
+
+
+def _indicador_detalle_impl(indicador_id):
     fila = fetch_one(
         """
         SELECT i.id, i.nombre, i.area_id, i.area_direccion, i.dimension_id,
@@ -163,7 +181,13 @@ def indicador_detalle(indicador_id):
 
 
 def resumenes_areas(user):
-    areas = areas_visibles(user)
+    from .data_cache import resumenes_areas_cached
+
+    return resumenes_areas_cached(int(user["id"]), bool(user["es_admin"]))
+
+
+def _resumenes_areas_impl(user_id, es_admin):
+    areas = _areas_visibles_impl(user_id, es_admin)
     if not areas:
         return []
     ids = [area["id"] for area in areas]
@@ -207,6 +231,12 @@ def resumenes_areas(user):
 
 
 def periodos_de(frecuencia):
+    from .data_cache import periodos_de_cached
+
+    return periodos_de_cached(frecuencia)
+
+
+def _periodos_de_impl(frecuencia):
     return fetch_all(
         """
         SELECT id, label, fecha_fin
@@ -260,3 +290,6 @@ def guardar_medicion(user, indicador, periodo_id, numerador, denominador, conclu
             user["id"],
         ),
     )
+    from .data_cache import invalidate_data_cache
+
+    invalidate_data_cache()

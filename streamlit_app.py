@@ -210,7 +210,22 @@ def ir(vista, **extra):
     st.session_state.vista = vista
     for clave, valor in extra.items():
         st.session_state[clave] = valor
+
+
+def ir_ahora(vista, **extra):
+    ir(vista, **extra)
     st.rerun()
+
+
+def _ir_cb(vista, **extra):
+    def _cb():
+        ir(vista, **extra)
+
+    return _cb
+
+
+def _cerrar_sesion():
+    st.session_state.clear()
 
 
 def figura(serie, alto=220):
@@ -262,18 +277,13 @@ def figura(serie, alto=220):
     return fig
 
 
-def mostrar_figura(serie, alto, key=None, seleccionable=False):
-    extras = {}
-    if seleccionable:
-        extras["on_select"] = "rerun"
-        extras["selection_mode"] = "points"
+def mostrar_figura(serie, alto, key=None):
     return st.plotly_chart(
         figura(serie, alto),
         use_container_width=True,
         config={"displayModeBar": False},
         key=key,
         theme=None,
-        **extras,
     )
 
 
@@ -309,7 +319,7 @@ def pagina_login():
             if user:
                 st.session_state.user = user
                 st.session_state.vista = "home"
-                st.rerun()
+                return
             st.error("Correo o contraseña incorrectos.")
 
 
@@ -325,18 +335,25 @@ def sidebar(user):
             """,
             unsafe_allow_html=True,
         )
-        if st.button("Vista ejecutiva", use_container_width=True, type="tertiary"):
-            ir("home")
+        st.button(
+            "Vista ejecutiva",
+            use_container_width=True,
+            type="tertiary",
+            on_click=_ir_cb("home"),
+        )
         for area in areas_visibles(user):
-            if st.button(area["nombre"], key=f"nav-{area['id']}", use_container_width=True, type="tertiary"):
-                ir("area", area_id=area["id"])
+            st.button(
+                area["nombre"],
+                key=f"nav-{area['id']}",
+                use_container_width=True,
+                type="tertiary",
+                on_click=_ir_cb("area", area_id=area["id"]),
+            )
         st.markdown(
             f'<div class="side-foot"><p class="side-user">{html.escape(user["nombre"])}</p></div>',
             unsafe_allow_html=True,
         )
-        if st.button("Cerrar sesión", type="tertiary", key="cerrar-sesion"):
-            st.session_state.clear()
-            st.rerun()
+        st.button("Cerrar sesión", type="tertiary", key="cerrar-sesion", on_click=_cerrar_sesion)
 
 
 def vista_home(user):
@@ -373,8 +390,11 @@ def vista_home(user):
                 """,
                 unsafe_allow_html=True,
             )
-            if st.button("Abrir área", key=f"home-{r['area']['id']}"):
-                ir("area", area_id=r["area"]["id"])
+            st.button(
+                "Abrir área",
+                key=f"home-{r['area']['id']}",
+                on_click=_ir_cb("area", area_id=r["area"]["id"]),
+            )
     if not resumenes:
         st.info("No hay áreas asignadas a esta cuenta.")
 
@@ -406,24 +426,19 @@ def mosaico_tarjeta(item):
             """,
             unsafe_allow_html=True,
         )
-        evento = mostrar_figura(item["serie"], 190, key=f"ch-{item['id']}", seleccionable=True)
-        puntos = ()
-        seleccion = getattr(evento, "selection", None)
-        if seleccion is not None:
-            puntos = tuple(getattr(seleccion, "points", None) or ())
-        visto = f"ch-sel-{item['id']}"
-        anterior = st.session_state.get(visto)
-        st.session_state[visto] = puntos
-        if puntos and puntos != anterior:
-            ir("ficha", indicador_id=item["id"])
-        if st.button("Ver más", key=f"ind-{item['id']}", type="tertiary"):
-            ir("ficha", indicador_id=item["id"])
+        mostrar_figura(item["serie"], 190, key=f"ch-{item['id']}")
+        st.button(
+            "Ver más",
+            key=f"ind-{item['id']}",
+            type="tertiary",
+            on_click=_ir_cb("ficha", indicador_id=item["id"]),
+        )
 
 
 def vista_area(user):
     area_id = st.session_state.get("area_id")
     if not area_id or not puede_ver_area(user, area_id):
-        ir("home")
+        ir_ahora("home")
     area = next(a for a in areas_visibles(user) if a["id"] == area_id)
     filas = indicadores_de_area(area_id)
     verdes = sum(1 for f in filas if f["semaforo"] == "verde")
@@ -465,9 +480,11 @@ def vista_ficha(user):
     indicador_id = st.session_state.get("indicador_id")
     item = indicador_detalle(indicador_id) if indicador_id else None
     if not item or not puede_ver_area(user, item["area_id"]):
-        ir("home")
-    if st.button("← " + item["area_nombre"]):
-        ir("area", area_id=item["area_id"])
+        ir_ahora("home")
+    st.button(
+        "← " + item["area_nombre"],
+        on_click=_ir_cb("area", area_id=item["area_id"]),
+    )
     st.markdown(
         f'<p class="eyebrow">{item["area_nombre"]} · {item["dimension_nombre"]}</p>',
         unsafe_allow_html=True,
@@ -540,6 +557,11 @@ def vista_ficha(user):
     if item.get("fuente_datos"):
         st.caption(f"Fuente. {item['fuente_datos']}")
     st.markdown("---")
+    _formulario_carga(user, item)
+
+
+@st.fragment
+def _formulario_carga(user, item):
     st.markdown('<p class="serif" style="font-size:1.4rem">Cargar medición</p>', unsafe_allow_html=True)
     periodos = periodos_de(item["frecuencia"]) if item.get("frecuencia") else []
     if not periodos:
@@ -569,7 +591,7 @@ def vista_ficha(user):
                 estado,
             )
             st.success("Medición guardada.")
-            st.rerun()
+            st.rerun(scope="app")
         except Exception as exc:
             st.error(f"No se pudo guardar: {exc}")
 
@@ -587,9 +609,10 @@ def texto_nd_fila(item, medicion):
 
 def main():
     st.markdown(CSS, unsafe_allow_html=True)
+    if not st.session_state.get("user"):
+        pagina_login()
     user = st.session_state.get("user")
     if not user:
-        pagina_login()
         return
     sidebar(user)
     vista = st.session_state.get("vista", "home")
