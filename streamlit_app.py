@@ -182,6 +182,21 @@ div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button:
   border-color: #d4b45a !important;
   color: #0c1c2e !important;
 }
+.st-key-ficha-cargar button {
+  background: #0c1c2e !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  padding: 0.48rem 1rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+}
+.st-key-ficha-cargar button:hover {
+  background: #143049 !important;
+  color: #ffffff !important;
+}
 .login-panel { background: #0c1c2e; color: #f8fafc; border-radius: 0; min-height: 80vh; padding: 3.5rem; }
 div[data-testid="stTextInput"] input,
 div[data-testid="stTextInput"] input:focus,
@@ -476,6 +491,41 @@ def vista_area(user):
                     mosaico_tarjeta(item)
 
 
+@st.dialog("Cargar medición")
+def _dialogo_carga(user, item):
+    periodos = periodos_de(item["frecuencia"]) if item.get("frecuencia") else []
+    if not periodos:
+        st.info("No hay períodos cargados para esta frecuencia.")
+        return
+    etiquetas = {p["label"]: p["id"] for p in periodos}
+    with st.form("cargar"):
+        label = st.selectbox("Período", list(etiquetas))
+        numerador = st.number_input("Numerador / valor", value=None, format="%f")
+        denominador = None
+        if item.get("tipo_calculo") == "razon":
+            denominador = st.number_input("Denominador", value=None, format="%f")
+        conclusion = st.text_area("Conclusión del período")
+        es_prueba = st.checkbox("Dato de prueba o provisorio (VP)", value=True)
+        estado = st.selectbox("Estado", ["publicado", "borrador"])
+        guardar = st.form_submit_button("Guardar")
+    if guardar:
+        try:
+            guardar_medicion(
+                user,
+                item,
+                etiquetas[label],
+                numerador,
+                denominador,
+                conclusion,
+                es_prueba,
+                estado,
+            )
+            st.success("Medición guardada.")
+            st.rerun()
+        except Exception as exc:
+            st.error(f"No se pudo guardar: {exc}")
+
+
 def vista_ficha(user):
     indicador_id = st.session_state.get("indicador_id")
     item = indicador_detalle(indicador_id) if indicador_id else None
@@ -489,7 +539,12 @@ def vista_ficha(user):
         f'<p class="eyebrow">{item["area_nombre"]} · {item["dimension_nombre"]}</p>',
         unsafe_allow_html=True,
     )
-    st.markdown(f'<h1 class="serif">{item["nombre"]}</h1>', unsafe_allow_html=True)
+    titulo, accion = st.columns([4.2, 1.15], vertical_alignment="center")
+    with titulo:
+        st.markdown(f'<h1 class="serif" style="margin:0">{item["nombre"]}</h1>', unsafe_allow_html=True)
+    with accion:
+        if st.button("Cargar medición", key="ficha-cargar"):
+            _dialogo_carga(user, item)
     ultima = item["ultima"]
     valor = "—"
     if ultima and ultima["valor_calculado"] is not None:
@@ -556,44 +611,6 @@ def vista_ficha(user):
         st.caption(f"Fórmula. {item['formula_calculo']}")
     if item.get("fuente_datos"):
         st.caption(f"Fuente. {item['fuente_datos']}")
-    st.markdown("---")
-    _formulario_carga(user, item)
-
-
-@st.fragment
-def _formulario_carga(user, item):
-    st.markdown('<p class="serif" style="font-size:1.4rem">Cargar medición</p>', unsafe_allow_html=True)
-    periodos = periodos_de(item["frecuencia"]) if item.get("frecuencia") else []
-    if not periodos:
-        st.info("No hay períodos cargados para esta frecuencia.")
-        return
-    etiquetas = {p["label"]: p["id"] for p in periodos}
-    with st.form("cargar"):
-        label = st.selectbox("Período", list(etiquetas))
-        numerador = st.number_input("Numerador / valor", value=None, format="%f")
-        denominador = None
-        if item.get("tipo_calculo") == "razon":
-            denominador = st.number_input("Denominador", value=None, format="%f")
-        conclusion = st.text_area("Conclusión del período")
-        es_prueba = st.checkbox("Dato de prueba o provisorio (VP)", value=True)
-        estado = st.selectbox("Estado", ["publicado", "borrador"])
-        guardar = st.form_submit_button("Guardar")
-    if guardar:
-        try:
-            guardar_medicion(
-                user,
-                item,
-                etiquetas[label],
-                numerador,
-                denominador,
-                conclusion,
-                es_prueba,
-                estado,
-            )
-            st.success("Medición guardada.")
-            st.rerun(scope="app")
-        except Exception as exc:
-            st.error(f"No se pudo guardar: {exc}")
 
 
 def texto_nd_fila(item, medicion):
