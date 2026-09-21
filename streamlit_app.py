@@ -26,6 +26,10 @@ CSS = """
 <style>
 html, body, [class*="css"] { font-family: "Segoe UI", Calibri, sans-serif; }
 .stApp { background: #f4f1ea; }
+.block-container {
+  padding-top: 1.35rem !important;
+  padding-bottom: 2rem !important;
+}
 [data-testid="stHeader"] { background: transparent; }
 #MainMenu, footer { visibility: hidden; }
 [data-testid="stSidebar"] { background: #0c1c2e; }
@@ -112,8 +116,14 @@ html, body, [class*="css"] { font-family: "Segoe UI", Calibri, sans-serif; }
     line-height: 1.35 !important;
     margin: 0 0 0.15rem 0.15rem !important;
 }
-.eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #1d4463; opacity: .7; }
+.eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #1d4463; opacity: .7; margin: 0 0 .35rem; }
 h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; color: #0c1c2e; }
+.page-title {
+  font-size: 1.48rem !important;
+  line-height: 1.22 !important;
+  font-weight: 500 !important;
+  margin: 0 0 .4rem !important;
+}
 .gold { color: #d4b45a; letter-spacing: .22em; font-size: 11px; text-transform: uppercase; }
 .card {
     background: #fff; border: 1px solid #e7e5e4; border-radius: 16px;
@@ -376,7 +386,7 @@ def sidebar(user):
 
 def vista_home(user):
     st.markdown('<p class="eyebrow">Resumen</p>', unsafe_allow_html=True)
-    st.markdown('<h1 class="serif">Vista ejecutiva</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="serif page-title">Vista ejecutiva</p>', unsafe_allow_html=True)
     st.markdown(
         '<p class="muted">Cumplimiento de la última medición publicada de cada indicador, por área visible.</p>',
         unsafe_allow_html=True,
@@ -464,7 +474,7 @@ def vista_area(user):
     grises = sum(1 for f in filas if f["semaforo"] == "gris")
     evaluados = verdes + rojos
     pct = f"{round(100 * verdes / evaluados)}% de indicadores en meta" if evaluados else "Sin indicadores evaluados"
-    st.markdown(f'<h1 class="serif">{area["nombre"]}</h1>', unsafe_allow_html=True)
+    st.markdown(f'<p class="serif page-title">{html.escape(area["nombre"])}</p>', unsafe_allow_html=True)
     st.markdown(
         f"""
         <div class="leyenda">
@@ -485,7 +495,7 @@ def vista_area(user):
     for fila in filas:
         por_dim.setdefault(fila["dimension_nombre"], []).append(fila)
     for dimension, items in por_dim.items():
-        st.markdown(f'<p class="eyebrow" style="margin-top:1.6rem">{dimension}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eyebrow" style="margin-top:1.1rem">{dimension}</p>', unsafe_allow_html=True)
         pares = [items[i : i + 2] for i in range(0, len(items), 2)]
         for par in pares:
             cols = st.columns(2)
@@ -561,7 +571,7 @@ def vista_ficha(user):
     )
     titulo, accion = st.columns([4.2, 1.15], vertical_alignment="center")
     with titulo:
-        st.markdown(f'<h1 class="serif" style="margin:0">{item["nombre"]}</h1>', unsafe_allow_html=True)
+        st.markdown(f'<p class="serif page-title" style="margin:0">{html.escape(item["nombre"])}</p>', unsafe_allow_html=True)
     with accion:
         if st.button("Cargar medición", key="ficha-cargar"):
             _dialogo_carga(user, item)
