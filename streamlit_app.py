@@ -4,6 +4,8 @@ Local:  streamlit run streamlit_app.py
 Nube:   Streamlit Cloud → este archivo + secret DATABASE_URL
 """
 
+import html
+
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -27,28 +29,89 @@ html, body, [class*="css"] { font-family: "Segoe UI", Calibri, sans-serif; }
 [data-testid="stHeader"] { background: transparent; }
 #MainMenu, footer { visibility: hidden; }
 [data-testid="stSidebar"] { background: #0c1c2e; }
-[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
-[data-testid="stSidebar"] .stMarkdown p { color: #e2e8f0 !important; }
-[data-testid="stSidebar"] .stButton { width: 100%; }
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] { padding: 1.1rem 0.85rem 1.2rem 1rem; }
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.2rem !important; }
+[data-testid="stSidebar"] .gold { color: #d4b45a !important; }
+[data-testid="stSidebar"] .side-brand-title,
+[data-testid="stSidebar"] .side-brand-title * { color: #ffffff !important; }
+[data-testid="stSidebar"] .side-brand-place { color: #94a3b8 !important; }
+[data-testid="stSidebar"] .side-user { color: #64748b !important; }
+[data-testid="stSidebar"] .stMarkdown p { margin-bottom: 0 !important; }
+[data-testid="stSidebar"] .stButton { width: 100%; margin-bottom: 0 !important; }
 [data-testid="stSidebar"] .stButton > button,
-[data-testid="stSidebar"] button {
+[data-testid="stSidebar"] button,
+[data-testid="stSidebar"] [data-testid="stBaseButton-tertiary"] {
     background: transparent !important;
     border: 0 !important;
-    color: #cbd5e1 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
     text-align: left !important;
     justify-content: flex-start !important;
+    align-items: center !important;
     display: flex !important;
     width: 100% !important;
-    border-radius: 8px;
-    padding: .45rem .7rem;
+    border-radius: 6px;
+    padding: 0.48rem 0.45rem 0.48rem 0.15rem !important;
+    min-height: 2.35rem !important;
+    font-size: 1.16rem !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+    opacity: 1 !important;
 }
 [data-testid="stSidebar"] .stButton > button > div,
-[data-testid="stSidebar"] button p {
+[data-testid="stSidebar"] button p,
+[data-testid="stSidebar"] button span,
+[data-testid="stSidebar"] button * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
     width: 100% !important;
     text-align: left !important;
     justify-content: flex-start !important;
+    align-items: center !important;
+    opacity: 1 !important;
 }
-[data-testid="stSidebar"] button:hover { background: #143049 !important; }
+[data-testid="stSidebar"] button:hover { background: #143049 !important; color: #fff !important; }
+[data-testid="stSidebar"] .st-key-cerrar-sesion button,
+[data-testid="stSidebar"] .st-key-cerrar-sesion button * {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+    font-size: 0.75rem !important;
+    font-weight: 400 !important;
+    min-height: 0 !important;
+    padding: 0.15rem 0.15rem !important;
+}
+[data-testid="stSidebar"] .st-key-cerrar-sesion button:hover,
+[data-testid="stSidebar"] .st-key-cerrar-sesion button:hover * {
+    color: #94a3b8 !important;
+    background: transparent !important;
+}
+.side-brand {
+    padding: 0.15rem 0.15rem 1rem 0.15rem;
+    margin-bottom: 1.15rem;
+    border-bottom: 1px solid rgba(212, 180, 90, 0.28);
+}
+.side-brand-title {
+    font-size: 1.42rem !important;
+    line-height: 1.18 !important;
+    margin: 0.4rem 0 0 !important;
+    font-weight: 500 !important;
+}
+.side-brand-place {
+    font-size: 0.72rem !important;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0.45rem 0 0 !important;
+}
+.side-foot {
+    margin-top: 2.25rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.1);
+}
+.side-user {
+    font-size: 0.72rem !important;
+    line-height: 1.35 !important;
+    margin: 0 0 0.15rem 0.15rem !important;
+}
 .eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #1d4463; opacity: .7; }
 h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; color: #0c1c2e; }
 .gold { color: #d4b45a; letter-spacing: .22em; font-size: 11px; text-transform: uppercase; }
@@ -59,30 +122,65 @@ h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; 
 .muted { color: #64748b; font-size: .9rem; }
 .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 99px; margin-right: .35rem; }
 .dot-verde { background: #0f766e; } .dot-rojo { background: #b91c1c; } .dot-gris { background: #94a3b8; }
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 1.4rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0.55rem;
+}
+.leyenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+.leyenda-sep {
+  width: 1px;
+  height: 0.95rem;
+  background: #d6deea;
+}
 div[data-testid="stVerticalBlockBorderWrapper"],
 div[data-testid="stVerticalBlockBorderWrapper"] > div,
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"],
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMarkdown"],
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stPlotlyChart"],
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="element-container"],
+div[data-testid="stVerticalBlockBorderWrapper"] button,
 div[data-testid="stVerticalBlockBorderWrapper"] .js-plotly-plot,
-div[data-testid="stVerticalBlockBorderWrapper"] .plot-container,
-div[data-testid="stVerticalBlockBorderWrapper"] .main-svg {
-  background: #f4f1ea !important;
+div[data-testid="stVerticalBlockBorderWrapper"] .plot-container {
+  background: #ffffff !important;
 }
 div[data-testid="stVerticalBlockBorderWrapper"] {
   border: 1px solid #e7e5e4 !important;
   border-radius: 16px !important;
+  box-shadow: 0 1px 2px rgba(12, 28, 46, 0.04);
 }
 div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] {
-  gap: 0.2rem !important;
+  gap: 0 !important;
 }
-div[data-testid="stVerticalBlockBorderWrapper"] button {
-  justify-content: flex-start !important;
-  text-align: left !important;
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] {
+  width: auto !important;
+  margin: 0.15rem 0 0.35rem !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
+  background: #ffffff !important;
+  color: #1d4463 !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 8px !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  padding: 0.22rem 0.75rem !important;
+  min-height: 0 !important;
+  width: auto !important;
+  box-shadow: none !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button:hover {
+  background: #f8fafc !important;
+  border-color: #d4b45a !important;
   color: #0c1c2e !important;
-  font-weight: 600 !important;
-  padding-left: 0 !important;
 }
 .login-panel { background: #0c1c2e; color: #f8fafc; border-radius: 0; min-height: 80vh; padding: 3.5rem; }
 div[data-testid="stTextInput"] input,
@@ -115,7 +213,8 @@ def ir(vista, **extra):
     st.rerun()
 
 
-def figura(serie, alto=120):
+def figura(serie, alto=220):
+    compacto = alto < 220
     fig = go.Figure()
     if serie:
         fig.add_trace(
@@ -128,29 +227,54 @@ def figura(serie, alto=120):
                 fill="tozeroy",
                 fillcolor="rgba(20,48,73,0.08)",
                 hovertemplate="%{x}<br>%{y}<extra></extra>",
+                cliponaxis=False,
             )
         )
     fig.update_layout(
         height=alto,
-        margin=dict(l=8, r=8, t=10, b=8),
-        paper_bgcolor="#f4f1ea",
-        plot_bgcolor="#f4f1ea",
+        margin=dict(l=48, r=18, t=12, b=52) if compacto else dict(l=56, r=20, t=20, b=56),
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
         showlegend=False,
+        font=dict(color="#475569"),
         xaxis=dict(
+            automargin=True,
             showgrid=True,
             gridcolor="#e2e8f0",
             zeroline=False,
-            tickfont=dict(size=10, color="#94a3b8"),
+            tickangle=-25 if compacto else 0,
+            tickfont=dict(size=11, color="#475569"),
+            ticks="outside",
+            ticklen=4,
         ),
         yaxis=dict(
+            automargin=True,
             showgrid=True,
             gridcolor="#e2e8f0",
             zeroline=False,
-            tickfont=dict(size=10, color="#94a3b8"),
+            tickfont=dict(size=11, color="#475569"),
+            ticks="outside",
+            ticklen=4,
+            separatethousands=True,
         ),
         hovermode="x unified",
     )
     return fig
+
+
+def mostrar_figura(serie, alto, key=None, seleccionable=False):
+    extras = {}
+    if seleccionable:
+        extras["on_select"] = "rerun"
+        extras["selection_mode"] = "points"
+    return st.plotly_chart(
+        figura(serie, alto),
+        use_container_width=True,
+        config={"displayModeBar": False},
+        key=key,
+        theme=None,
+        **extras,
+    )
 
 
 def pagina_login():
@@ -191,21 +315,26 @@ def pagina_login():
 
 def sidebar(user):
     with st.sidebar:
-        st.markdown('<p class="gold">Ministerio de Salud Pública</p>', unsafe_allow_html=True)
         st.markdown(
-            '<p class="serif" style="font-size:1.55rem;line-height:1.2;margin:.2rem 0 0;color:#fff !important">Tablero de<br>indicadores</p>',
+            """
+            <div class="side-brand">
+              <p class="gold" style="margin:0">Ministerio de Salud Pública</p>
+              <p class="serif side-brand-title">Tablero de<br>indicadores</p>
+              <p class="side-brand-place">Provincia de Corrientes</p>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        st.caption("Corrientes")
-        st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
         if st.button("Vista ejecutiva", use_container_width=True, type="tertiary"):
             ir("home")
         for area in areas_visibles(user):
             if st.button(area["nombre"], key=f"nav-{area['id']}", use_container_width=True, type="tertiary"):
                 ir("area", area_id=area["id"])
-        st.markdown("---")
-        st.caption(user["nombre"])
-        if st.button("Cerrar sesión"):
+        st.markdown(
+            f'<div class="side-foot"><p class="side-user">{html.escape(user["nombre"])}</p></div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("Cerrar sesión", type="tertiary", key="cerrar-sesion"):
             st.session_state.clear()
             st.rerun()
 
@@ -256,33 +385,28 @@ def mosaico_tarjeta(item):
         valor = f"{float(item['ultima']['valor_calculado']):.1f} {item.get('unidad_resultado') or ''}"
     periodo = item["ultima"]["label"] if item["ultima"] else ""
     extra = item.get("area_direccion") or ""
+    nombre = html.escape(item["nombre"])
+    extra_txt = html.escape(extra)
+    periodo_txt = html.escape(periodo)
+    meta_txt = html.escape(item["meta_texto"] or "—")
+    nd_txt = html.escape(item["nd_texto"])
     with st.container(border=True):
-        titulo, sema = st.columns([12, 1])
-        with titulo:
-            if st.button(item["nombre"], key=f"ind-{item['id']}", type="tertiary", use_container_width=True):
-                ir("ficha", indicador_id=item["id"])
-        with sema:
-            st.markdown(f'<span class="dot dot-{item["semaforo"]}"></span>', unsafe_allow_html=True)
         st.markdown(
             f"""
-            <div style="background:#f4f1ea;margin:0;padding:0 0 .15rem">
-            <p class="eyebrow" style="margin:0">{extra}</p>
-            <p class="serif" style="font-size:1.25rem;margin:.35rem 0 0">{valor}</p>
-            <p class="muted" style="margin:.1rem 0 0">{periodo}</p>
-            <p class="muted" style="margin:.1rem 0 0">Meta {item['meta_texto'] or '—'} · {item['nd_texto']}</p>
+            <div style="background:#ffffff;margin:0;padding:.15rem .1rem .4rem">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem">
+                <p class="serif" style="font-size:1.18rem;font-weight:600;line-height:1.35;margin:0;color:#0c1c2e">{nombre}</p>
+                <span class="dot dot-{item["semaforo"]}" style="flex-shrink:0;margin-top:.4rem"></span>
+              </div>
+              <p class="eyebrow" style="margin:.7rem 0 0">{extra_txt}</p>
+              <p class="serif" style="font-size:1.25rem;margin:.35rem 0 0">{html.escape(valor)}</p>
+              <p class="muted" style="margin:.1rem 0 0">{periodo_txt}</p>
+              <p class="muted" style="margin:.1rem 0 0">Meta {meta_txt} · {nd_txt}</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        evento = st.plotly_chart(
-            figura(item["serie"], 130),
-            use_container_width=True,
-            config={"displayModeBar": False},
-            on_select="rerun",
-            selection_mode="points",
-            key=f"ch-{item['id']}",
-            theme=None,
-        )
+        evento = mostrar_figura(item["serie"], 190, key=f"ch-{item['id']}", seleccionable=True)
         puntos = ()
         seleccion = getattr(evento, "selection", None)
         if seleccion is not None:
@@ -291,6 +415,8 @@ def mosaico_tarjeta(item):
         anterior = st.session_state.get(visto)
         st.session_state[visto] = puntos
         if puntos and puntos != anterior:
+            ir("ficha", indicador_id=item["id"])
+        if st.button("Ver más", key=f"ind-{item['id']}", type="tertiary"):
             ir("ficha", indicador_id=item["id"])
 
 
@@ -304,15 +430,22 @@ def vista_area(user):
     rojos = sum(1 for f in filas if f["semaforo"] == "rojo")
     grises = sum(1 for f in filas if f["semaforo"] == "gris")
     evaluados = verdes + rojos
-    pct = f"{round(100 * verdes / evaluados)}% de indicadores en meta." if evaluados else ""
-    st.markdown('<p class="eyebrow">Área</p>', unsafe_allow_html=True)
+    pct = f"{round(100 * verdes / evaluados)}% de indicadores en meta" if evaluados else "Sin indicadores evaluados"
     st.markdown(f'<h1 class="serif">{area["nombre"]}</h1>', unsafe_allow_html=True)
     st.markdown(
-        f'<p class="muted">{pct} '
-        f'<span class="dot dot-verde"></span>{verdes} '
-        f'<span class="dot dot-rojo"></span>{rojos} '
-        f'<span class="dot dot-gris"></span>{grises}'
-        f' &nbsp; VP valor de prueba · s/d sin dato · n/a no aplica</p>',
+        f"""
+        <div class="leyenda">
+          <span class="leyenda-item">{pct}</span>
+          <span class="leyenda-sep"></span>
+          <span class="leyenda-item"><span class="dot dot-verde"></span>{verdes} en meta</span>
+          <span class="leyenda-item"><span class="dot dot-rojo"></span>{rojos} fuera</span>
+          <span class="leyenda-item"><span class="dot dot-gris"></span>{grises} sin dato</span>
+          <span class="leyenda-sep"></span>
+          <span class="leyenda-item">VP: valor de prueba</span>
+          <span class="leyenda-item">s/d: sin dato</span>
+          <span class="leyenda-item">n/a: no aplica</span>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
     por_dim = {}
@@ -370,15 +503,31 @@ def vista_ficha(user):
         )
     if item.get("area_direccion"):
         st.caption(f"Área/Dirección · {item['area_direccion']}")
-    st.plotly_chart(figura(item["serie"], 320), use_container_width=True, config={"displayModeBar": False})
-    st.caption(item["nd_texto"] + "  ·  VP valor de prueba · s/d sin dato · n/a no aplica")
+    with st.container(border=True):
+        st.markdown(
+            '<p class="eyebrow" style="margin:.15rem 0 .1rem">Evolución</p>',
+            unsafe_allow_html=True,
+        )
+        mostrar_figura(item["serie"], 320, key=f"ch-ficha-{item['id']}")
+        st.markdown(
+            f"""
+            <div class="leyenda" style="margin:.15rem 0 .4rem">
+              <span class="leyenda-item">{html.escape(item["nd_texto"])}</span>
+              <span class="leyenda-sep"></span>
+              <span class="leyenda-item">VP: valor de prueba</span>
+              <span class="leyenda-item">s/d: sin dato</span>
+              <span class="leyenda-item">n/a: no aplica</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     if item["mediciones"]:
         st.markdown('<p class="eyebrow">Mediciones</p>', unsafe_allow_html=True)
         filas_tabla = [
             {
                 "Período": m["label"],
                 "Valor": f"{float(m['valor_calculado']):.1f}" if m["valor_calculado"] is not None else "s/d",
-                "N / D": texto_nd_fila(item, m),
+                "Numerador / Denominador": texto_nd_fila(item, m),
             }
             for m in item["mediciones"]
         ]

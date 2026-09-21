@@ -84,7 +84,7 @@ def texto_meta(meta_tipo, unidad, meta_min, meta_max):
 def texto_nd(numerador, denominador, es_razon, es_prueba):
     n = fmt_num(numerador) if numerador is not None else "s/d"
     d = "n/a" if not es_razon else (fmt_num(denominador) if denominador is not None else "s/d")
-    partes = [f"N {n}", f"D {d}"]
+    partes = [f"Numerador {n}", f"Denominador {d}"]
     if es_prueba:
         partes.append("VP")
     return " · ".join(partes)
