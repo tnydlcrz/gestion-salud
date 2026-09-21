@@ -494,6 +494,20 @@ def vista_area(user):
                     mosaico_tarjeta(item)
 
 
+def _parse_cantidad(texto):
+    if texto is None:
+        return None
+    bruto = str(texto).strip().replace(" ", "").replace(",", ".")
+    if not bruto:
+        return None
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        return Decimal(bruto)
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError("Ingresá un número válido (enteros o decimales).") from exc
+
+
 @st.dialog("Cargar medición")
 def _dialogo_carga(user, item):
     periodos = periodos_de(item["frecuencia"]) if item.get("frecuencia") else []
@@ -503,16 +517,18 @@ def _dialogo_carga(user, item):
     etiquetas = {p["label"]: p["id"] for p in periodos}
     with st.form("cargar"):
         label = st.selectbox("Período", list(etiquetas))
-        numerador = st.number_input("Numerador / valor", value=None, format="%f")
-        denominador = None
+        numerador_txt = st.text_input("Numerador / valor", value="", placeholder="Ej. 32 o 32,5")
+        denominador_txt = None
         if item.get("tipo_calculo") == "razon":
-            denominador = st.number_input("Denominador", value=None, format="%f")
+            denominador_txt = st.text_input("Denominador", value="", placeholder="Ej. 100")
         conclusion = st.text_area("Conclusión del período")
         es_prueba = st.checkbox("Dato de prueba o provisorio (VP)", value=True)
         estado = st.selectbox("Estado", ["publicado", "borrador"])
         guardar = st.form_submit_button("Guardar")
     if guardar:
         try:
+            numerador = _parse_cantidad(numerador_txt)
+            denominador = _parse_cantidad(denominador_txt) if item.get("tipo_calculo") == "razon" else None
             guardar_medicion(
                 user,
                 item,
