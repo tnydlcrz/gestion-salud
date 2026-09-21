@@ -182,7 +182,8 @@ div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button:
   border-color: #d4b45a !important;
   color: #0c1c2e !important;
 }
-.st-key-ficha-cargar button {
+.st-key-ficha-cargar button,
+.st-key-ficha-volver button {
   background: #0c1c2e !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
@@ -193,9 +194,11 @@ div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button:
   font-weight: 500 !important;
   white-space: nowrap !important;
 }
-.st-key-ficha-cargar button:hover {
+.st-key-ficha-cargar button:hover,
+.st-key-ficha-volver button:hover {
   background: #143049 !important;
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 .login-panel { background: #0c1c2e; color: #f8fafc; border-radius: 0; min-height: 80vh; padding: 3.5rem; }
 div[data-testid="stTextInput"] input,
@@ -533,6 +536,7 @@ def vista_ficha(user):
         ir_ahora("home")
     st.button(
         "← " + item["area_nombre"],
+        key="ficha-volver",
         on_click=_ir_cb("area", area_id=item["area_id"]),
     )
     st.markdown(
