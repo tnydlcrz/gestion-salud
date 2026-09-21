@@ -1,5 +1,40 @@
-from .db import execute, fetch_all, fetch_one
+from datetime import date, datetime, timezone
+from decimal import Decimal
+
 from .logic import calcular_valor, meta_para, semaforo, texto_meta, texto_nd
+from .supabase_client import get_client
+
+
+def _tabla(nombre):
+    return get_client().table(nombre)
+
+
+def _fecha(valor):
+    if valor is None:
+        return None
+    if isinstance(valor, datetime):
+        return valor.date()
+    if isinstance(valor, date):
+        return valor
+    return date.fromisoformat(str(valor)[:10])
+
+
+def _num(valor):
+    if valor is None or valor == "":
+        return None
+    if isinstance(valor, Decimal):
+        return valor
+    return Decimal(str(valor))
+
+
+def _json(valor):
+    if valor is None:
+        return None
+    if isinstance(valor, Decimal):
+        return float(valor)
+    if isinstance(valor, (datetime, date)):
+        return valor.isoformat()
+    return valor
 
 
 def areas_visibles(user):
@@ -10,17 +45,23 @@ def areas_visibles(user):
 
 def _areas_visibles_impl(user_id, es_admin):
     if es_admin:
-        return fetch_all("SELECT id, nombre FROM indicadores_areadireccion ORDER BY nombre")
-    return fetch_all(
-        """
-        SELECT DISTINCT a.id, a.nombre
-        FROM indicadores_areadireccion a
-        JOIN cuentas_usuarioarea ua ON ua.area_id = a.id
-        WHERE ua.usuario_id = %s AND ua.fecha_baja IS NULL
-        ORDER BY a.nombre
-        """,
-        (user_id,),
+        data = _tabla("indicadores_areadireccion").select("id,nombre").order("nombre").execute().data or []
+        return data
+    filas = (
+        _tabla("cuentas_usuarioarea")
+        .select("area:indicadores_areadireccion(id,nombre)")
+        .eq("usuario_id", user_id)
+        .is_("fecha_baja", "null")
+        .execute()
+        .data
+        or []
     )
+    vistos = {}
+    for fila in filas:
+        area = fila.get("area")
+        if area and area["id"] not in vistos:
+            vistos[area["id"]] = area
+    return sorted(vistos.values(), key=lambda item: item["nombre"])
 
 
 def puede_ver_area(user, area_id):
@@ -30,17 +71,21 @@ def puede_ver_area(user, area_id):
 def _metas_por_version(version_ids):
     if not version_ids:
         return {}
-    filas = fetch_all(
-        """
-        SELECT indicador_version_id, meta_min, meta_max, fecha_inicio_meta, fecha_fin_meta
-        FROM indicadores_metaperiodo
-        WHERE indicador_version_id = ANY(%s)
-        ORDER BY fecha_inicio_meta
-        """,
-        (version_ids,),
+    filas = (
+        _tabla("indicadores_metaperiodo")
+        .select("indicador_version_id,meta_min,meta_max,fecha_inicio_meta,fecha_fin_meta")
+        .in_("indicador_version_id", version_ids)
+        .order("fecha_inicio_meta")
+        .execute()
+        .data
+        or []
     )
     por = {}
     for fila in filas:
+        fila["fecha_inicio_meta"] = _fecha(fila.get("fecha_inicio_meta"))
+        fila["fecha_fin_meta"] = _fecha(fila.get("fecha_fin_meta"))
+        fila["meta_min"] = _num(fila.get("meta_min"))
+        fila["meta_max"] = _num(fila.get("meta_max"))
         por.setdefault(fila["indicador_version_id"], []).append(fila)
     return por
 
@@ -48,21 +93,33 @@ def _metas_por_version(version_ids):
 def _mediciones_por_version(version_ids):
     if not version_ids:
         return {}
-    filas = fetch_all(
-        """
-        SELECT m.indicador_version_id, m.id, m.fecha_corte, m.numerador_valor, m.denominador_valor,
-               m.valor_calculado, m.es_prueba, m.conclusion, m.estado, m.periodo_id,
-               p.label, p.anio, p.fecha_inicio, p.fecha_fin
-        FROM indicadores_medicion m
-        JOIN indicadores_periodo p ON p.id = m.periodo_id
-        WHERE m.indicador_version_id = ANY(%s) AND m.estado = 'publicado'
-        ORDER BY p.fecha_inicio
-        """,
-        (version_ids,),
+    filas = (
+        _tabla("indicadores_medicion")
+        .select(
+            "indicador_version_id,id,fecha_corte,numerador_valor,denominador_valor,"
+            "valor_calculado,es_prueba,conclusion,estado,periodo_id,"
+            "periodo:indicadores_periodo(label,anio,fecha_inicio,fecha_fin)"
+        )
+        .in_("indicador_version_id", version_ids)
+        .eq("estado", "publicado")
+        .execute()
+        .data
+        or []
     )
     por = {}
     for fila in filas:
+        periodo = fila.pop("periodo", None) or {}
+        fila["label"] = periodo.get("label")
+        fila["anio"] = periodo.get("anio")
+        fila["fecha_inicio"] = _fecha(periodo.get("fecha_inicio"))
+        fila["fecha_fin"] = _fecha(periodo.get("fecha_fin"))
+        fila["fecha_corte"] = _fecha(fila.get("fecha_corte"))
+        fila["numerador_valor"] = _num(fila.get("numerador_valor"))
+        fila["denominador_valor"] = _num(fila.get("denominador_valor"))
+        fila["valor_calculado"] = _num(fila.get("valor_calculado"))
         por.setdefault(fila["indicador_version_id"], []).append(fila)
+    for lista in por.values():
+        lista.sort(key=lambda item: item.get("fecha_inicio") or date.min)
     return por
 
 
@@ -133,21 +190,16 @@ def indicadores_de_area(area_id):
 
 
 def _indicadores_de_area_impl(area_id):
-    filas = fetch_all(
-        """
-        SELECT i.id, i.nombre, i.area_id, i.area_direccion, i.dimension_id,
-               d.nombre AS dimension_nombre,
-               v.id AS version_id, v.tipo_calculo, v.unidad_resultado, v.meta_tipo,
-               v.sentido_mejora, v.frecuencia, v.formula_calculo, v.fuente_datos,
-               v.objetivo_operativo
-        FROM indicadores_indicador i
-        JOIN indicadores_dimension d ON d.id = i.dimension_id
-        LEFT JOIN indicadores_indicadorversion v
-          ON v.indicador_id = i.id AND v.fecha_vigencia_hasta IS NULL
-        WHERE i.activo AND i.area_id = %s
-        ORDER BY d.nombre, i.nombre
-        """,
-        (area_id,),
+    filas = (
+        _tabla("v_indicadores_base")
+        .select("*")
+        .eq("activo", True)
+        .eq("area_id", area_id)
+        .order("dimension_nombre")
+        .order("nombre")
+        .execute()
+        .data
+        or []
     )
     return _enriquecer(filas)
 
@@ -159,25 +211,18 @@ def indicador_detalle(indicador_id):
 
 
 def _indicador_detalle_impl(indicador_id):
-    fila = fetch_one(
-        """
-        SELECT i.id, i.nombre, i.area_id, i.area_direccion, i.dimension_id,
-               a.nombre AS area_nombre, d.nombre AS dimension_nombre,
-               v.id AS version_id, v.tipo_calculo, v.unidad_resultado, v.meta_tipo,
-               v.sentido_mejora, v.frecuencia, v.formula_calculo, v.fuente_datos,
-               v.objetivo_operativo
-        FROM indicadores_indicador i
-        JOIN indicadores_areadireccion a ON a.id = i.area_id
-        JOIN indicadores_dimension d ON d.id = i.dimension_id
-        LEFT JOIN indicadores_indicadorversion v
-          ON v.indicador_id = i.id AND v.fecha_vigencia_hasta IS NULL
-        WHERE i.id = %s
-        """,
-        (indicador_id,),
+    filas = (
+        _tabla("v_indicadores_base")
+        .select("*")
+        .eq("id", indicador_id)
+        .limit(1)
+        .execute()
+        .data
+        or []
     )
-    if not fila:
+    if not filas:
         return None
-    return _enriquecer([fila])[0]
+    return _enriquecer(filas)[0]
 
 
 def resumenes_areas(user):
@@ -191,21 +236,12 @@ def _resumenes_areas_impl(user_id, es_admin):
     if not areas:
         return []
     ids = [area["id"] for area in areas]
-    indicadores = fetch_all(
-        """
-        SELECT i.id, i.nombre, i.area_id, i.area_direccion, i.dimension_id,
-               d.nombre AS dimension_nombre,
-               v.id AS version_id, v.tipo_calculo, v.unidad_resultado, v.meta_tipo,
-               v.sentido_mejora, v.frecuencia, v.formula_calculo, v.fuente_datos,
-               v.objetivo_operativo
-        FROM indicadores_indicador i
-        JOIN indicadores_dimension d ON d.id = i.dimension_id
-        LEFT JOIN indicadores_indicadorversion v
-          ON v.indicador_id = i.id AND v.fecha_vigencia_hasta IS NULL
-        WHERE i.activo AND i.area_id = ANY(%s)
-        """,
-        (ids,),
-    )
+    consulta = _tabla("v_indicadores_base").select("*").eq("activo", True)
+    if len(ids) == 1:
+        consulta = consulta.eq("area_id", ids[0])
+    else:
+        consulta = consulta.in_("area_id", ids)
+    indicadores = consulta.execute().data or []
     _enriquecer(indicadores)
     por_area = {}
     for item in indicadores:
@@ -237,20 +273,29 @@ def periodos_de(frecuencia):
 
 
 def _periodos_de_impl(frecuencia):
-    return fetch_all(
-        """
-        SELECT id, label, fecha_fin
-        FROM indicadores_periodo
-        WHERE frecuencia = %s
-        ORDER BY fecha_inicio DESC
-        """,
-        (frecuencia,),
+    return (
+        _tabla("indicadores_periodo")
+        .select("id,label,fecha_fin")
+        .eq("frecuencia", frecuencia)
+        .order("fecha_inicio", desc=True)
+        .execute()
+        .data
+        or []
     )
 
 
 def guardar_medicion(user, indicador, periodo_id, numerador, denominador, conclusion, es_prueba, estado):
     version_id = indicador["version_id"]
-    periodo = fetch_one("SELECT id, fecha_fin FROM indicadores_periodo WHERE id = %s", (periodo_id,))
+    periodos = (
+        _tabla("indicadores_periodo")
+        .select("id,fecha_fin")
+        .eq("id", periodo_id)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    periodo = periodos[0] if periodos else None
     if not version_id or not periodo:
         raise ValueError("Faltan versión o período.")
     valor = calcular_valor(
@@ -259,36 +304,23 @@ def guardar_medicion(user, indicador, periodo_id, numerador, denominador, conclu
         numerador,
         denominador,
     )
-    execute(
-        """
-        INSERT INTO indicadores_medicion (
-            indicador_version_id, periodo_id, fecha_corte, numerador_valor, denominador_valor,
-            valor_calculado, es_prueba, conclusion, estado, usuario_carga_id, fecha_carga
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-        ON CONFLICT (indicador_version_id, periodo_id)
-        DO UPDATE SET
-            fecha_corte = EXCLUDED.fecha_corte,
-            numerador_valor = EXCLUDED.numerador_valor,
-            denominador_valor = EXCLUDED.denominador_valor,
-            valor_calculado = EXCLUDED.valor_calculado,
-            es_prueba = EXCLUDED.es_prueba,
-            conclusion = EXCLUDED.conclusion,
-            estado = EXCLUDED.estado,
-            usuario_carga_id = EXCLUDED.usuario_carga_id,
-            fecha_carga = NOW()
-        """,
-        (
-            version_id,
-            periodo["id"],
-            periodo["fecha_fin"],
-            numerador,
-            denominador,
-            valor,
-            es_prueba,
-            conclusion or "",
-            estado,
-            user["id"],
-        ),
+    payload = {
+        "indicador_version_id": version_id,
+        "periodo_id": periodo["id"],
+        "fecha_corte": str(_fecha(periodo["fecha_fin"]) or periodo["fecha_fin"]),
+        "numerador_valor": _json(numerador),
+        "denominador_valor": _json(denominador),
+        "valor_calculado": _json(valor),
+        "es_prueba": bool(es_prueba),
+        "conclusion": conclusion or "",
+        "estado": estado,
+        "usuario_carga_id": user["id"],
+        "fecha_carga": datetime.now(timezone.utc).isoformat(),
+    }
+    (
+        _tabla("indicadores_medicion")
+        .upsert(payload, on_conflict="indicador_version_id,periodo_id")
+        .execute()
     )
     from .data_cache import invalidate_data_cache
 

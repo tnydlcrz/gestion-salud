@@ -12,6 +12,7 @@ secrets.json
 *.sql
 *.dump
 *.bak
+!db/*.sql
 
 # Python / Django
 .venv/

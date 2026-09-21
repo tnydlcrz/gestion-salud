@@ -1,7 +1,7 @@
-"""Tablero ejecutivo MSP Corrientes. Usa la base Django/Neon tal cual.
+"""Tablero ejecutivo MSP Corrientes. Streamlit + Supabase (misma base copiada desde Neon).
 
 Local:  streamlit run streamlit_app.py
-Nube:   Streamlit Cloud → este archivo + secret DATABASE_URL
+Nube:   Streamlit Cloud → este archivo + secrets SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY
 """
 
 import html

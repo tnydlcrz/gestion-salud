@@ -2,7 +2,7 @@ import base64
 import hashlib
 import hmac
 
-from .db import fetch_one
+from .supabase_client import get_client
 
 
 def check_django_password(password, encoded):
@@ -24,14 +24,17 @@ def check_django_password(password, encoded):
 
 
 def autenticar(email, password):
-    user = fetch_one(
-        """
-        SELECT id, email, nombre, password, es_admin_global, is_superuser, is_active
-        FROM cuentas_usuario
-        WHERE email = %s
-        """,
-        (email.strip(),),
+    filas = (
+        get_client()
+        .table("cuentas_usuario")
+        .select("id,email,nombre,password,es_admin_global,is_superuser,is_active")
+        .eq("email", email.strip())
+        .limit(1)
+        .execute()
+        .data
+        or []
     )
+    user = filas[0] if filas else None
     if not user or not user["is_active"]:
         return None
     if not check_django_password(password, user["password"]):

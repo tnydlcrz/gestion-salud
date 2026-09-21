@@ -56,10 +56,11 @@ pip install -r requirements-streamlit.txt
 streamlit run streamlit_app.py
 ```
 
-En [Streamlit Cloud](https://share.streamlit.io): New app → este repo → `streamlit_app.py`. En Secrets:
+En [Streamlit Cloud](https://share.streamlit.io): New app → este repo → `streamlit_app.py`. En Secrets (proyecto **Supabase** aparte del de compromisos):
 
 ```
-DATABASE_URL = "postgresql://...neon.tech/neondb?sslmode=require"
+SUPABASE_URL = "https://xxxxx.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY = "eyJ..."
 ```
 
-Usuarios y clave: los mismos del seed.
+Pasos: [`SETUP_SUPABASE.md`](SETUP_SUPABASE.md). Usuarios y clave: los mismos del seed.
