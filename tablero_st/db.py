@@ -43,52 +43,29 @@ def _dsn():
     return _limpiar_url(url)
 
 
-def _make_pool():
-    from psycopg_pool import ConnectionPool
-
-    return ConnectionPool(
-        conninfo=_dsn(),
-        min_size=1,
-        max_size=5,
-        timeout=15,
-        kwargs={"row_factory": dict_row, "connect_timeout": 8},
+def _connect():
+    return psycopg.connect(
+        _dsn(),
+        row_factory=dict_row,
+        connect_timeout=15,
+        prepare_threshold=None,
     )
 
 
-try:
-    import streamlit as st
-
-    _cached_pool = st.cache_resource(show_spinner=False)(_make_pool)
-except Exception:
-    _cached_pool = None
-
-
-def _pool():
-    if _cached_pool is None:
-        return None
-    try:
-        return _cached_pool()
-    except Exception:
-        return None
-
-
 def _run(sql, params, write=False):
-    pool = _pool()
-    if pool is not None:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, params or ())
-                filas = list(cur.fetchall()) if cur.description else []
-            if write:
-                conn.commit()
-            return filas
-    with psycopg.connect(_dsn(), row_factory=dict_row, connect_timeout=8) as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params or ())
-            filas = list(cur.fetchall()) if cur.description else []
-        if write:
-            conn.commit()
-        return filas
+    ultimo = None
+    for _intento in range(2):
+        try:
+            with _connect() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql, params or ())
+                    filas = list(cur.fetchall()) if cur.description else []
+                if write:
+                    conn.commit()
+                return filas
+        except psycopg.OperationalError as exc:
+            ultimo = exc
+    raise ultimo
 
 
 def fetch_all(sql, params=None):
