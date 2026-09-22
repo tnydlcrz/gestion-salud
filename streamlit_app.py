@@ -77,12 +77,14 @@ html, body, [class*="css"] { font-family: "Segoe UI", Calibri, sans-serif; }
 [data-testid="stSidebar"] button:hover { background: #143049 !important; color: #fff !important; }
 [data-testid="stSidebar"] .st-key-cerrar-sesion button,
 [data-testid="stSidebar"] .st-key-cerrar-sesion button * {
-    color: #64748b !important;
-    -webkit-text-fill-color: #64748b !important;
-    font-size: 0.75rem !important;
+    color: #94a3b8 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
+    font-size: 0.9rem !important;
     font-weight: 400 !important;
     min-height: 0 !important;
-    padding: 0.15rem 0.15rem !important;
+    padding: 0.28rem 0.45rem 0.28rem 0.15rem !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
 }
 [data-testid="stSidebar"] .st-key-cerrar-sesion button:hover,
 [data-testid="stSidebar"] .st-key-cerrar-sesion button:hover * {
@@ -112,9 +114,11 @@ html, body, [class*="css"] { font-family: "Segoe UI", Calibri, sans-serif; }
     border-top: 1px solid rgba(226, 232, 240, 0.1);
 }
 .side-user {
-    font-size: 0.72rem !important;
+    font-size: 0.9rem !important;
     line-height: 1.35 !important;
-    margin: 0 0 0.15rem 0.15rem !important;
+    text-align: left !important;
+    margin: 0 0 0.2rem 0 !important;
+    padding: 0 0.15rem !important;
 }
 .eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #1d4463; opacity: .7; margin: 0 0 .35rem; }
 h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; color: #0c1c2e; }
@@ -381,7 +385,13 @@ def sidebar(user):
             f'<div class="side-foot"><p class="side-user">{html.escape(user["nombre"])}</p></div>',
             unsafe_allow_html=True,
         )
-        st.button("Cerrar sesión", type="tertiary", key="cerrar-sesion", on_click=_cerrar_sesion)
+        st.button(
+            "Cerrar sesión",
+            type="tertiary",
+            key="cerrar-sesion",
+            use_container_width=True,
+            on_click=_cerrar_sesion,
+        )
 
 
 def vista_home(user):
