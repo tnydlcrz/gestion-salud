@@ -351,7 +351,7 @@ def pagina_login():
             if user:
                 st.session_state.user = user
                 st.session_state.vista = "home"
-                return
+                st.rerun()
             st.error("Correo o contraseña incorrectos.")
 
 
@@ -668,9 +668,8 @@ def main():
     st.markdown(CSS, unsafe_allow_html=True)
     if not st.session_state.get("user"):
         pagina_login()
-    user = st.session_state.get("user")
-    if not user:
         return
+    user = st.session_state.user
     sidebar(user)
     vista = st.session_state.get("vista", "home")
     if vista == "area":
