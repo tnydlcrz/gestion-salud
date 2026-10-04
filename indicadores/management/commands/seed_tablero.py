@@ -139,6 +139,18 @@ def _indicador(area, dimension, responsable, admin, data, periodos):
             fecha_inicio_meta=date(2025, 1, 1),
             fecha_fin_meta=date(2026, 12, 31),
         )
+    else:
+        meta = version.metas.order_by("fecha_inicio_meta").first()
+        if meta:
+            campos = []
+            if "meta_min" in data and meta.meta_min != data.get("meta_min"):
+                meta.meta_min = data.get("meta_min")
+                campos.append("meta_min")
+            if "meta_max" in data and meta.meta_max != data.get("meta_max"):
+                meta.meta_max = data.get("meta_max")
+                campos.append("meta_max")
+            if campos:
+                meta.save(update_fields=campos)
     for med in data.get("mediciones", []):
         periodo = periodos[med["periodo"]]
         defaults = {
@@ -512,8 +524,8 @@ class Command(BaseCommand):
                 "sentido": IndicadorVersion.Sentido.ASCENDENTE,
                 "fuente": "Padrón de beneficiarios Sumar+",
                 "frecuencia": M,
-                "nota": "Valores 2026 de prueba.",
-                "meta_min": Decimal("39"),
+                "nota": "Meta ≥ 35% según planilla SUMAR+ agosto 2026. Valores mensuales 2026 previos a agosto son de prueba.",
+                "meta_min": Decimal("35"),
                 "mediciones": [
                     {"periodo": (2026, M, 1), "num": Decimal("36"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026. Pendiente de reemplazo con dato real."},
                     {"periodo": (2026, M, 2), "num": Decimal("37.5"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
@@ -521,6 +533,13 @@ class Command(BaseCommand):
                     {"periodo": (2026, M, 4), "num": Decimal("38"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
                     {"periodo": (2026, M, 5), "num": Decimal("40.1"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
                     {"periodo": (2026, M, 6), "num": Decimal("41"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
+                    {
+                        "periodo": (2026, M, 8),
+                        "num": Decimal("209006"),
+                        "den": Decimal("576282"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla SUMAR+ agosto 2026 (209.006 / 576.282 = 36,27%).",
+                    },
                 ],
             },
             {
@@ -541,6 +560,13 @@ class Command(BaseCommand):
                 "mediciones": [
                     {"periodo": (2026, T, 1), "num": Decimal("68"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026. Por debajo del 70%."},
                     {"periodo": (2026, T, 2), "num": Decimal("73"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026. Superó la meta."},
+                    {
+                        "periodo": (2026, T, 3),
+                        "num": Decimal("205"),
+                        "den": Decimal("270"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla SUMAR+ agosto 2026 (205 / 270 = 75,93%).",
+                    },
                 ],
             },
             {
@@ -565,6 +591,37 @@ class Command(BaseCommand):
                     {"periodo": (2026, M, 4), "num": Decimal("74"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
                     {"periodo": (2026, M, 5), "num": Decimal("75"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
                     {"periodo": (2026, M, 6), "num": Decimal("76"), "den": Decimal("100"), "conclusion": "Valor de prueba 2026."},
+                    {
+                        "periodo": (2026, M, 8),
+                        "num": Decimal("270"),
+                        "den": Decimal("387"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla SUMAR+ agosto 2026 (270 / 387 = 69,77%).",
+                    },
+                ],
+            },
+            {
+                "nombre": "Antigüedad de las Prestaciones Recibidas en el Mes",
+                "area_direccion": "Auditoría · Facturación",
+                "dimension": "Producción/Gestión Administrativa y/o Presupuestaria",
+                "formula": "Promedio de fecha de recepción de las facturas recibidas en el mes − promedio de fecha de las prestaciones",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.VALOR_DIRECTO,
+                "unidad": "días",
+                "num_desc": "Días promedio entre prestación y recepción de factura",
+                "num_unidad": "días",
+                "meta_tipo": IndicadorVersion.MetaTipo.MAXIMO,
+                "sentido": IndicadorVersion.Sentido.DESCENDENTE,
+                "fuente": "Auditoría de facturación",
+                "frecuencia": M,
+                "nota": "Planilla SUMAR+ agosto 2026. El semáforo de tres colores (amarillo 61–90 días) queda pendiente de modelar con el resto de áreas.",
+                "meta_max": Decimal("60"),
+                "mediciones": [
+                    {
+                        "periodo": (2026, M, 8),
+                        "valor": Decimal("71"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla SUMAR+ agosto 2026 (9/8/2026 vs 30/5/2026 = 71 días).",
+                    },
                 ],
             },
             {
@@ -589,6 +646,12 @@ class Command(BaseCommand):
                     {"periodo": (2026, M, 4), "valor": Decimal("47"), "conclusion": "Valor de prueba 2026."},
                     {"periodo": (2026, M, 5), "valor": Decimal("49"), "conclusion": "Valor de prueba 2026."},
                     {"periodo": (2026, M, 6), "valor": Decimal("46"), "conclusion": "Valor de prueba 2026."},
+                    {
+                        "periodo": (2026, M, 8),
+                        "valor": Decimal("38"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla SUMAR+ agosto 2026 (4/7/2026 vs 11/8/2026 = 38 días).",
+                    },
                 ],
             },
         ]

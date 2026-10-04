@@ -26,7 +26,7 @@ Usuarios de prueba (clave `tablero2026`):
 
 ## Seed
 
-Indicadores de UEP, Laboratorio Central (bloque A), SUMAR+ y los 9 de Dirección de Sistemas (`docs/Indicadores Gestion Direccion Sistemas.docx`). Los valores 2026 de SUMAR+ y Sistemas son de prueba (salvo la línea de base 68/95 de ancho de banda) y se editan desde Cargar medición.
+Indicadores de UEP, Laboratorio Central (bloque A), SUMAR+ (5, incluye antigüedad de prestaciones) y los 9 de Dirección de Sistemas (`docs/Indicadores Gestion Direccion Sistemas.docx`). Los valores 2026 de SUMAR+ y Sistemas son de prueba (salvo la línea de base 68/95 de ancho de banda) y se editan desde Cargar medición.
 
 ## Piloto en la nube (gratis)
 
