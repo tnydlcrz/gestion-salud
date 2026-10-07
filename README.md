@@ -18,15 +18,16 @@ python manage.py runserver
 
 Usuarios de prueba (clave `tablero2026`):
 
-- `admin@local` — ve UEP, Laboratorio, SUMAR+ y Dirección de Sistemas
+- `admin@local` — ve UEP, Laboratorio, SUMAR+, Sistemas y Planificación y Estadística
 - `uep@local` — solo Unidad Ejecutora Provincial
 - `lab@local` — solo Laboratorio Central
 - `sumar@local` — solo SUMAR+
 - `sistemas@local` — solo Dirección de Sistemas
+- `planif@local` — solo Dirección General de Planificación y Estadística
 
 ## Seed
 
-Indicadores de UEP, Laboratorio Central (bloque A), SUMAR+ (5, incluye antigüedad de prestaciones) y los 9 de Dirección de Sistemas (`docs/Indicadores Gestion Direccion Sistemas.docx`). Los valores 2026 de SUMAR+ y Sistemas son de prueba (salvo la línea de base 68/95 de ancho de banda) y se editan desde Cargar medición.
+Indicadores de UEP, Laboratorio Central (bloque A), SUMAR+ (5, incluye antigüedad de prestaciones), los 9 de Dirección de Sistemas y la primera tanda de Planificación y Estadística (informes validados y certificados digitales). El resto de esa área espera a que cierren definiciones. Los valores 2026 de SUMAR+ y Sistemas son de prueba (salvo la línea de base 68/95 de ancho de banda) y se editan desde Cargar medición.
 
 ## Piloto en la nube (gratis)
 

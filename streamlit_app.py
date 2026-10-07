@@ -134,6 +134,13 @@ h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif !important; 
     padding: 1.15rem 1.25rem; margin-bottom: .85rem;
 }
 .muted { color: #64748b; font-size: .9rem; }
+.mosaico-nota {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 0.2rem 0 0;
+}
+.mosaico-nota span { color: #475569; font-weight: 600; }
 .dot { display: inline-block; width: .65rem; height: .65rem; border-radius: 99px; margin-right: .35rem; }
 .dot-verde { background: #0f766e; } .dot-rojo { background: #b91c1c; } .dot-gris { background: #94a3b8; }
 .leyenda {
@@ -437,17 +444,38 @@ def vista_home(user):
         st.info("No hay áreas asignadas a esta cuenta.")
 
 
-def mosaico_tarjeta(item):
+def _subtitulo_area(extra, area_nombre):
+    extra = (extra or "").strip()
+    if not extra:
+        return ""
+    area = (area_nombre or "").strip()
+    if not area:
+        return extra
+    e, a = extra.casefold(), area.casefold()
+    if e == a or e in a or a in e:
+        return ""
+    return extra
+
+
+def mosaico_tarjeta(item, area_nombre=""):
     valor = "Sin medición publicada"
     if item["ultima"] and item["ultima"]["valor_calculado"] is not None:
         valor = f"{float(item['ultima']['valor_calculado']):.1f} {item.get('unidad_resultado') or ''}"
     periodo = item["ultima"]["label"] if item["ultima"] else ""
-    extra = item.get("area_direccion") or ""
     nombre = html.escape(item["nombre"])
-    extra_txt = html.escape(extra)
     periodo_txt = html.escape(periodo)
     meta_txt = html.escape(item["meta_texto"] or "—")
     nd_txt = html.escape(item["nd_texto"])
+    formula = (item.get("formula_calculo") or "").strip()
+    fuente = (item.get("fuente_datos") or "").strip()
+    extra = _subtitulo_area(item.get("area_direccion"), area_nombre)
+    notas = []
+    if formula:
+        notas.append(f'<p class="mosaico-nota"><span>Cálculo.</span> {html.escape(formula)}</p>')
+    if fuente:
+        notas.append(f'<p class="mosaico-nota"><span>Fuente.</span> {html.escape(fuente)}</p>')
+    if extra:
+        notas.append(f'<p class="mosaico-nota"><span>Área/Dirección.</span> {html.escape(extra)}</p>')
     with st.container(border=True):
         st.markdown(
             f"""
@@ -456,8 +484,7 @@ def mosaico_tarjeta(item):
                 <p class="serif" style="font-size:1.18rem;font-weight:600;line-height:1.35;margin:0;color:#0c1c2e">{nombre}</p>
                 <span class="dot dot-{item["semaforo"]}" style="flex-shrink:0;margin-top:.4rem"></span>
               </div>
-              <p class="eyebrow" style="margin:.7rem 0 0">{extra_txt}</p>
-              <p class="serif" style="font-size:1.25rem;margin:.35rem 0 0">{html.escape(valor)}</p>
+              <p class="serif" style="font-size:1.25rem;margin:.55rem 0 0">{html.escape(valor)}</p>
               <p class="muted" style="margin:.1rem 0 0">{periodo_txt}</p>
               <p class="muted" style="margin:.1rem 0 0">Meta {meta_txt} · {nd_txt}</p>
             </div>
@@ -465,6 +492,11 @@ def mosaico_tarjeta(item):
             unsafe_allow_html=True,
         )
         mostrar_figura(item["serie"], 190, key=f"ch-{item['id']}")
+        if notas:
+            st.markdown(
+                f'<div style="background:#ffffff;padding:.05rem .1rem .45rem">{"".join(notas)}</div>',
+                unsafe_allow_html=True,
+            )
         st.button(
             "Ver más",
             key=f"ind-{item['id']}",
@@ -511,7 +543,7 @@ def vista_area(user):
             cols = st.columns(2)
             for col, item in zip(cols, par):
                 with col:
-                    mosaico_tarjeta(item)
+                    mosaico_tarjeta(item, area["nombre"])
 
 
 def _parse_cantidad(texto):

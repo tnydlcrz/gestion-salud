@@ -79,7 +79,7 @@ def _label(anio, frecuencia, nro):
 
 def _periodos():
     creados = {}
-    for anio in (2025, 2026):
+    for anio in (2025, 2026, 2027, 2028):
         for freq, cantidad in PERIODOS_POR_FREQ.items():
             for nro in range(1, cantidad + 1):
                 ini, fin = _rango(anio, freq, nro)
@@ -132,25 +132,7 @@ def _indicador(area, dimension, responsable, admin, data, periodos):
             objetivo_operativo=data.get("objetivo", ""),
             nota_metodologica=data.get("nota", ""),
         )
-        MetaPeriodo.objects.create(
-            indicador_version=version,
-            meta_min=data.get("meta_min"),
-            meta_max=data.get("meta_max"),
-            fecha_inicio_meta=date(2025, 1, 1),
-            fecha_fin_meta=date(2026, 12, 31),
-        )
-    else:
-        meta = version.metas.order_by("fecha_inicio_meta").first()
-        if meta:
-            campos = []
-            if "meta_min" in data and meta.meta_min != data.get("meta_min"):
-                meta.meta_min = data.get("meta_min")
-                campos.append("meta_min")
-            if "meta_max" in data and meta.meta_max != data.get("meta_max"):
-                meta.meta_max = data.get("meta_max")
-                campos.append("meta_max")
-            if campos:
-                meta.save(update_fields=campos)
+    _sync_metas(version, data)
     for med in data.get("mediciones", []):
         periodo = periodos[med["periodo"]]
         defaults = {
@@ -175,6 +157,41 @@ def _indicador(area, dimension, responsable, admin, data, periodos):
     return indicador
 
 
+def _sync_metas(version, data):
+    metas_data = data.get("metas")
+    if metas_data:
+        if version.metas.exists():
+            return
+        for meta in metas_data:
+            MetaPeriodo.objects.create(
+                indicador_version=version,
+                meta_min=meta.get("min"),
+                meta_max=meta.get("max"),
+                fecha_inicio_meta=meta["desde"],
+                fecha_fin_meta=meta["hasta"],
+            )
+        return
+    if not version.metas.exists():
+        MetaPeriodo.objects.create(
+            indicador_version=version,
+            meta_min=data.get("meta_min"),
+            meta_max=data.get("meta_max"),
+            fecha_inicio_meta=date(2025, 1, 1),
+            fecha_fin_meta=date(2026, 12, 31),
+        )
+        return
+    meta = version.metas.order_by("fecha_inicio_meta").first()
+    campos = []
+    if "meta_min" in data and meta.meta_min != data.get("meta_min"):
+        meta.meta_min = data.get("meta_min")
+        campos.append("meta_min")
+    if "meta_max" in data and meta.meta_max != data.get("meta_max"):
+        meta.meta_max = data.get("meta_max")
+        campos.append("meta_max")
+    if campos:
+        meta.save(update_fields=campos)
+
+
 class Command(BaseCommand):
     help = "Carga áreas, usuarios de prueba y los indicadores del MVP."
 
@@ -197,6 +214,9 @@ class Command(BaseCommand):
         lab, _ = AreaDireccion.objects.get_or_create(nombre="Laboratorio Central de Redes y Programas")
         sumar, _ = AreaDireccion.objects.get_or_create(nombre="SUMAR+")
         sistemas, _ = AreaDireccion.objects.get_or_create(nombre="Dirección de Sistemas")
+        planif, _ = AreaDireccion.objects.get_or_create(
+            nombre="Dirección General de Planificación y Estadística"
+        )
 
         resp_uep, _ = Responsable.objects.get_or_create(
             area=uep, nombre="Responsable UEP", defaults={"correo": "uep@salud.corrientes.gob.ar"}
@@ -209,6 +229,11 @@ class Command(BaseCommand):
         )
         resp_sistemas, _ = Responsable.objects.get_or_create(
             area=sistemas, nombre="Responsable Dirección de Sistemas", defaults={"correo": "sistemas@salud.corrientes.gob.ar"}
+        )
+        resp_planif, _ = Responsable.objects.get_or_create(
+            area=planif,
+            nombre="Responsable Planificación y Estadística",
+            defaults={"correo": "planificacion@salud.corrientes.gob.ar"},
         )
 
         admin, _ = User.objects.get_or_create(
@@ -251,6 +276,12 @@ class Command(BaseCommand):
         )
         user_sistemas.set_password(PASSWORD)
         user_sistemas.save()
+        user_planif, _ = User.objects.get_or_create(
+            email="planif@local",
+            defaults={"username": "planif", "nombre": "Referente Planificación y Estadística"},
+        )
+        user_planif.set_password(PASSWORD)
+        user_planif.save()
 
         UsuarioArea.objects.get_or_create(
             usuario=user_uep, area=uep, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
@@ -263,6 +294,9 @@ class Command(BaseCommand):
         )
         UsuarioArea.objects.get_or_create(
             usuario=user_sistemas, area=sistemas, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
+        )
+        UsuarioArea.objects.get_or_create(
+            usuario=user_planif, area=planif, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
         )
 
         periodos = _periodos()
@@ -858,6 +892,68 @@ class Command(BaseCommand):
             },
         ]
 
+        planif_defs = [
+            {
+                "nombre": "Porcentaje de informes validados sin inconsistencias",
+                "area_direccion": "Planificación y Estadística",
+                "dimension": "Resultados",
+                "formula": "Informes validados sin inconsistencias / Total de informes elaborados × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Informes validados sin inconsistencias",
+                "den_desc": "Total de informes elaborados",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Control de calidad de informes del área (fuente a precisar)",
+                "frecuencia": A,
+                "objetivo": "Asegurar la calidad de los informes estadísticos antes de su difusión o envío.",
+                "nota": (
+                    "Primera tanda: definición y metas tomadas de la tabla de resultado (31/08/2026). "
+                    "Año 1 = 2026. Frecuencia anual inferida de las metas anuales. "
+                    "Pendiente confirmar con el área si coincide con “porcentaje de registros validados” de la tabla de proceso."
+                ),
+                "metas": [
+                    {"min": Decimal("95"), "desde": date(2026, 1, 1), "hasta": date(2026, 12, 31)},
+                    {"min": Decimal("97"), "desde": date(2027, 1, 1), "hasta": date(2027, 12, 31)},
+                    {"min": Decimal("98"), "desde": date(2028, 1, 1), "hasta": date(2028, 12, 31)},
+                ],
+                "mediciones": [
+                    {"periodo": (2026, A, 1), "num": Decimal("91"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba. Por debajo de la meta del 95%."},
+                    {"periodo": (2027, A, 1), "num": Decimal("98"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba. Superó la meta del 97%."},
+                    {"periodo": (2028, A, 1), "num": Decimal("99"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba. Superó la meta del 98%."},
+                ],
+            },
+            {
+                "nombre": "Porcentaje de certificados digitales emitidos",
+                "area_direccion": "Planificación y Estadística",
+                "dimension": "Resultados",
+                "formula": "Certificados digitales emitidos / Total de certificados emitidos × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Certificados digitales emitidos",
+                "den_desc": "Total de certificados emitidos",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Piloto hospitalario / Registro Civil (fuente a precisar)",
+                "frecuencia": A,
+                "objetivo": "Incrementar la emisión digital de certificados respecto del total emitido.",
+                "nota": (
+                    "Primera tanda: el más directo de la tabla de resultado (31/08/2026). "
+                    "Metas 50 / 80 / 100 % para 2026–2028. Frecuencia anual inferida de las metas anuales."
+                ),
+                "metas": [
+                    {"min": Decimal("50"), "desde": date(2026, 1, 1), "hasta": date(2026, 12, 31)},
+                    {"min": Decimal("80"), "desde": date(2027, 1, 1), "hasta": date(2027, 12, 31)},
+                    {"min": Decimal("100"), "desde": date(2028, 1, 1), "hasta": date(2028, 12, 31)},
+                ],
+                "mediciones": [
+                    {"periodo": (2026, A, 1), "num": Decimal("42"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba. Por debajo de la meta del 50%."},
+                    {"periodo": (2027, A, 1), "num": Decimal("84"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba. Superó la meta del 80%."},
+                    {"periodo": (2028, A, 1), "num": Decimal("91"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba. Por debajo de la meta del 100%."},
+                ],
+            },
+        ]
+
         for data in uep_defs:
             _indicador(uep, dims[data["dimension"]], resp_uep, admin, data, periodos)
         for data in lab_defs:
@@ -866,7 +962,10 @@ class Command(BaseCommand):
             _indicador(sumar, dims[data["dimension"]], resp_sumar, admin, data, periodos)
         for data in sistemas_defs:
             _indicador(sistemas, dims[data["dimension"]], resp_sistemas, admin, data, periodos)
+        for data in planif_defs:
+            _indicador(planif, dims[data["dimension"]], resp_planif, admin, data, periodos)
 
         self.stdout.write(self.style.SUCCESS(
-            "Seed listo. Usuarios: admin@local / uep@local / lab@local / sumar@local / sistemas@local  —  clave: tablero2026"
+            "Seed listo. Usuarios: admin@local / uep@local / lab@local / sumar@local / "
+            "sistemas@local / planif@local  —  clave: tablero2026"
         ))

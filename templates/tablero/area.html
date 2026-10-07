@@ -26,7 +26,7 @@
           <p class="font-medium leading-snug truncate" title="{{ fila.indicador.nombre }}">{{ fila.indicador.nombre }}</p>
           <span class="dot dot-{{ fila.semaforo }} mt-1 shrink-0"></span>
         </div>
-        {% if fila.indicador.area_direccion %}
+        {% if fila.indicador.area_direccion and fila.indicador.area_direccion != area.nombre %}
         <p class="text-[11px] uppercase tracking-wide text-slate-400 mt-0.5 truncate">{{ fila.indicador.area_direccion }}</p>
         {% endif %}
         <p class="text-sm text-slate-500 mt-1">
@@ -46,6 +46,12 @@
       <div class="mt-3">
         {% include "tablero/_chart.html" with chart_id=fila.chart_id chart=fila.chart height_class="h-28" compact=True unidad=fila.version.unidad_resultado %}
       </div>
+      {% if fila.version.formula_calculo %}
+      <p class="text-xs text-slate-500 mt-3 leading-snug"><span class="font-medium text-slate-600">Cálculo.</span> {{ fila.version.formula_calculo }}</p>
+      {% endif %}
+      {% if fila.version.fuente_datos %}
+      <p class="text-xs text-slate-500 mt-0.5 leading-snug"><span class="font-medium text-slate-600">Fuente.</span> {{ fila.version.fuente_datos }}</p>
+      {% endif %}
     </article>
     {% endfor %}
   </div>
