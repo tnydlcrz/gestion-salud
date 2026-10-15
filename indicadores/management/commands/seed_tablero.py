@@ -217,6 +217,7 @@ class Command(BaseCommand):
         planif, _ = AreaDireccion.objects.get_or_create(
             nombre="Dirección General de Planificación y Estadística"
         )
+        inmuniz, _ = AreaDireccion.objects.get_or_create(nombre="Dirección de Inmunizaciones")
 
         resp_uep, _ = Responsable.objects.get_or_create(
             area=uep, nombre="Responsable UEP", defaults={"correo": "uep@salud.corrientes.gob.ar"}
@@ -234,6 +235,11 @@ class Command(BaseCommand):
             area=planif,
             nombre="Responsable Planificación y Estadística",
             defaults={"correo": "planificacion@salud.corrientes.gob.ar"},
+        )
+        resp_inmuniz, _ = Responsable.objects.get_or_create(
+            area=inmuniz,
+            nombre="Responsable Dirección de Inmunizaciones",
+            defaults={"correo": "inmunizaciones@salud.corrientes.gob.ar"},
         )
 
         admin, _ = User.objects.get_or_create(
@@ -282,6 +288,12 @@ class Command(BaseCommand):
         )
         user_planif.set_password(PASSWORD)
         user_planif.save()
+        user_inmuniz, _ = User.objects.get_or_create(
+            email="inmuniz@local",
+            defaults={"username": "inmuniz", "nombre": "Referente Dirección de Inmunizaciones"},
+        )
+        user_inmuniz.set_password(PASSWORD)
+        user_inmuniz.save()
 
         UsuarioArea.objects.get_or_create(
             usuario=user_uep, area=uep, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
@@ -297,6 +309,9 @@ class Command(BaseCommand):
         )
         UsuarioArea.objects.get_or_create(
             usuario=user_planif, area=planif, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
+        )
+        UsuarioArea.objects.get_or_create(
+            usuario=user_inmuniz, area=inmuniz, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
         )
 
         periodos = _periodos()
@@ -954,6 +969,128 @@ class Command(BaseCommand):
             },
         ]
 
+        inmuniz_defs = [
+            {
+                "nombre": "Cumplimiento de las metas de cobertura de vacunación en la población objetivo",
+                "area_direccion": "Dirección de Inmunizaciones",
+                "dimension": "Gestión Específica del Área",
+                "formula": "N.º de personas vacunadas según vacuna y población objetivo ÷ población objetivo establecida × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Personas vacunadas según vacuna y población objetivo",
+                "den_desc": "Población objetivo establecida",
+                "meta_tipo": IndicadorVersion.MetaTipo.SEGUIMIENTO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "NOMIVAC/SISA, poblaciones objetivo oficiales e informes de cobertura",
+                "frecuencia": T,
+                "objetivo": "Evaluar el alcance de las estrategias de inmunización respecto de la población objetivo de cada vacuna.",
+                "nota": (
+                    "Propuesta 2026. La planilla indica meta según cada vacuna; queda en seguimiento "
+                    "hasta que el área fije un umbral provincial único para el semáforo."
+                ),
+                "mediciones": [
+                    {"periodo": (2026, T, 1), "num": Decimal("82"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. En seguimiento (meta por vacuna)."},
+                    {"periodo": (2026, T, 2), "num": Decimal("88"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. En seguimiento (meta por vacuna)."},
+                ],
+            },
+            {
+                "nombre": "Disponibilidad y abastecimiento de vacunas e insumos en la Red Provincial de Vacunación",
+                "area_direccion": "Dirección de Inmunizaciones",
+                "dimension": "Gestión Específica del Área",
+                "formula": "N.º de vacunatorios abastecidos según requerimiento/programación ÷ total de vacunatorios con requerimiento/programación × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Vacunatorios abastecidos según requerimiento/programación",
+                "den_desc": "Vacunatorios con requerimiento/programación",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Stock provincial, solicitudes, remitos y planillas de distribución",
+                "frecuencia": M,
+                "objetivo": "Garantizar la disponibilidad de vacunas e insumos para la continuidad de la vacunación en Capital e interior.",
+                "nota": "Propuesta 2026. Valores de prueba.",
+                "meta_min": Decimal("95"),
+                "mediciones": [
+                    {"periodo": (2026, M, 1), "num": Decimal("91"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Por debajo del 95%."},
+                    {"periodo": (2026, M, 2), "num": Decimal("93"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 3), "num": Decimal("96"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Alcanza la meta."},
+                    {"periodo": (2026, M, 4), "num": Decimal("94"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 5), "num": Decimal("97"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 6), "num": Decimal("98"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                ],
+            },
+            {
+                "nombre": "Cumplimiento de las actividades de capacitación y actualización de los equipos de vacunación",
+                "area_direccion": "Dirección de Inmunizaciones",
+                "dimension": "Capacitaciones",
+                "formula": "N.º de actividades de capacitación realizadas ÷ N.º de actividades programadas × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Actividades de capacitación realizadas",
+                "den_desc": "Actividades de capacitación programadas",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Cronograma, registros de asistencia, informes y documentación de capacitación",
+                "frecuencia": T,
+                "objetivo": "Medir el cumplimiento de las instancias de formación destinadas a los equipos de vacunación.",
+                "nota": "Propuesta 2026. Valores de prueba.",
+                "meta_min": Decimal("90"),
+                "mediciones": [
+                    {"periodo": (2026, T, 1), "num": Decimal("80"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Por debajo del 90%."},
+                    {"periodo": (2026, T, 2), "num": Decimal("94"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Superó la meta."},
+                ],
+            },
+            {
+                "nombre": "Oportunidad y cumplimiento del registro y monitoreo de información de inmunizaciones",
+                "area_direccion": "Dirección de Inmunizaciones",
+                "dimension": "Producción/Gestión Administrativa y/o Presupuestaria",
+                "formula": "N.º de vacunatorios que cumplen con los registros/reportes requeridos en el período ÷ total de vacunatorios que deben informar × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Vacunatorios que cumplen registros/reportes requeridos",
+                "den_desc": "Vacunatorios que deben informar",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "NOMIVAC/SISA, reportes de stock, planillas de seguimiento e informes",
+                "frecuencia": M,
+                "objetivo": "Evaluar el cumplimiento y la oportunidad de la información de inmunizaciones remitida por los vacunatorios.",
+                "nota": "Propuesta 2026. Valores de prueba.",
+                "meta_min": Decimal("90"),
+                "mediciones": [
+                    {"periodo": (2026, M, 1), "num": Decimal("86"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Por debajo del 90%."},
+                    {"periodo": (2026, M, 2), "num": Decimal("88"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 3), "num": Decimal("91"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Alcanza la meta."},
+                    {"periodo": (2026, M, 4), "num": Decimal("89"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 5), "num": Decimal("93"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 6), "num": Decimal("95"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                ],
+            },
+            {
+                "nombre": "Cumplimiento de las estrategias de vacunación programadas en el territorio provincial",
+                "area_direccion": "Dirección de Inmunizaciones",
+                "dimension": "Intervenciones Comunitarias y Cobertura Territorial",
+                "formula": "N.º de acciones territoriales realizadas ÷ N.º de acciones territoriales programadas × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Acciones territoriales realizadas",
+                "den_desc": "Acciones territoriales programadas",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Cronogramas, informes de operativos, registros de vacunación y planillas de actividades",
+                "frecuencia": M,
+                "objetivo": "Evaluar el desarrollo de las estrategias de vacunación en el territorio provincial (puntos fijos, escuelas, extramuros y operativos).",
+                "nota": "Propuesta 2026. Valores de prueba.",
+                "meta_min": Decimal("90"),
+                "mediciones": [
+                    {"periodo": (2026, M, 1), "num": Decimal("84"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Por debajo del 90%."},
+                    {"periodo": (2026, M, 2), "num": Decimal("90"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026. Alcanza la meta."},
+                    {"periodo": (2026, M, 3), "num": Decimal("92"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 4), "num": Decimal("87"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 5), "num": Decimal("94"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                    {"periodo": (2026, M, 6), "num": Decimal("91"), "den": Decimal("100"), "es_prueba": True, "conclusion": "Valor de prueba 2026."},
+                ],
+            },
+        ]
+
         for data in uep_defs:
             _indicador(uep, dims[data["dimension"]], resp_uep, admin, data, periodos)
         for data in lab_defs:
@@ -964,8 +1101,10 @@ class Command(BaseCommand):
             _indicador(sistemas, dims[data["dimension"]], resp_sistemas, admin, data, periodos)
         for data in planif_defs:
             _indicador(planif, dims[data["dimension"]], resp_planif, admin, data, periodos)
+        for data in inmuniz_defs:
+            _indicador(inmuniz, dims[data["dimension"]], resp_inmuniz, admin, data, periodos)
 
         self.stdout.write(self.style.SUCCESS(
             "Seed listo. Usuarios: admin@local / uep@local / lab@local / sumar@local / "
-            "sistemas@local / planif@local  —  clave: tablero2026"
+            "sistemas@local / planif@local / inmuniz@local  —  clave: tablero2026"
         ))
