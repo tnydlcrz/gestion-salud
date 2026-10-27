@@ -218,6 +218,7 @@ class Command(BaseCommand):
             nombre="Dirección General de Planificación y Estadística"
         )
         inmuniz, _ = AreaDireccion.objects.get_or_create(nombre="Dirección de Inmunizaciones")
+        telesalud, _ = AreaDireccion.objects.get_or_create(nombre="Dirección de Telesalud")
 
         resp_uep, _ = Responsable.objects.get_or_create(
             area=uep, nombre="Responsable UEP", defaults={"correo": "uep@salud.corrientes.gob.ar"}
@@ -240,6 +241,11 @@ class Command(BaseCommand):
             area=inmuniz,
             nombre="Responsable Dirección de Inmunizaciones",
             defaults={"correo": "inmunizaciones@salud.corrientes.gob.ar"},
+        )
+        resp_telesalud, _ = Responsable.objects.get_or_create(
+            area=telesalud,
+            nombre="Responsable Dirección de Telesalud",
+            defaults={"correo": "telesalud@salud.corrientes.gob.ar"},
         )
 
         admin, _ = User.objects.get_or_create(
@@ -294,6 +300,12 @@ class Command(BaseCommand):
         )
         user_inmuniz.set_password(PASSWORD)
         user_inmuniz.save()
+        user_telesalud, _ = User.objects.get_or_create(
+            email="telesalud@local",
+            defaults={"username": "telesalud", "nombre": "Referente Dirección de Telesalud"},
+        )
+        user_telesalud.set_password(PASSWORD)
+        user_telesalud.save()
 
         UsuarioArea.objects.get_or_create(
             usuario=user_uep, area=uep, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
@@ -312,6 +324,9 @@ class Command(BaseCommand):
         )
         UsuarioArea.objects.get_or_create(
             usuario=user_inmuniz, area=inmuniz, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
+        )
+        UsuarioArea.objects.get_or_create(
+            usuario=user_telesalud, area=telesalud, fecha_baja=None, defaults={"rol": UsuarioArea.Rol.AREA, "otorgado_por": admin}
         )
 
         periodos = _periodos()
@@ -1091,6 +1106,82 @@ class Command(BaseCommand):
             },
         ]
 
+        telesalud_defs = [
+            {
+                "nombre": "Porcentaje de hospitales provinciales con nodo de Telesalud",
+                "area_direccion": "Dirección de Telesalud",
+                "dimension": "Estructural (capacidad instalada)",
+                "formula": "Cantidad de nodos de Telesalud en hospitales / Cantidad total de hospitales provinciales × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Hospitales provinciales con nodo de Telesalud",
+                "den_desc": "Total de hospitales provinciales",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Registro de Nodos de Telesalud",
+                "frecuencia": M,
+                "objetivo": "Ampliar la implementación de servicios de Telesalud en la red hospitalaria provincial.",
+                "nota": (
+                    "Planilla INDICADORES TELESALUD. El título original decía “cantidad”; "
+                    "la fórmula es un porcentaje. El tercer indicador (demanda espontánea) queda pendiente "
+                    "hasta que el área corrija el denominador."
+                ),
+                "meta_min": Decimal("50"),
+                "mediciones": [
+                    {
+                        "periodo": (2025, M, 12),
+                        "num": Decimal("15"),
+                        "den": Decimal("50"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla Telesalud: 15/50 hospitales (30%) en 2025.",
+                    },
+                    {
+                        "periodo": (2026, M, 9),
+                        "num": Decimal("22"),
+                        "den": Decimal("50"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla Telesalud: 22/50 hospitales (44%) a septiembre 2026. Por debajo de la meta del 50%.",
+                    },
+                ],
+            },
+            {
+                "nombre": "Porcentaje de CAPS de Capital con consultorio virtual",
+                "area_direccion": "Dirección de Telesalud",
+                "dimension": "Intervenciones Comunitarias y Cobertura Territorial",
+                "formula": "Cantidad de CAPS con consultorio virtual / Cantidad total de CAPS en Capital × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "CAPS de Capital con consultorio virtual",
+                "den_desc": "Total de CAPS en Capital",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Registro de Nodos de Telesalud",
+                "frecuencia": M,
+                "objetivo": "Implementar consultorios virtuales en los CAPS de Capital.",
+                "nota": (
+                    "Planilla INDICADORES TELESALUD. Meta ≥ 90%. El valor de septiembre 2026 se interpretó "
+                    "como 7/17 (Excel lo había guardado como fecha)."
+                ),
+                "meta_min": Decimal("90"),
+                "mediciones": [
+                    {
+                        "periodo": (2025, M, 12),
+                        "num": Decimal("0"),
+                        "den": Decimal("17"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla Telesalud: 0/17 CAPS (0%) en 2025.",
+                    },
+                    {
+                        "periodo": (2026, M, 9),
+                        "num": Decimal("7"),
+                        "den": Decimal("17"),
+                        "es_prueba": True,
+                        "conclusion": "Planilla Telesalud sep-2026 interpretado como 7/17 (41%). Excel lo había convertido en fecha. VP hasta que el área lo confirme.",
+                    },
+                ],
+            },
+        ]
+
         for data in uep_defs:
             _indicador(uep, dims[data["dimension"]], resp_uep, admin, data, periodos)
         for data in lab_defs:
@@ -1103,8 +1194,10 @@ class Command(BaseCommand):
             _indicador(planif, dims[data["dimension"]], resp_planif, admin, data, periodos)
         for data in inmuniz_defs:
             _indicador(inmuniz, dims[data["dimension"]], resp_inmuniz, admin, data, periodos)
+        for data in telesalud_defs:
+            _indicador(telesalud, dims[data["dimension"]], resp_telesalud, admin, data, periodos)
 
         self.stdout.write(self.style.SUCCESS(
             "Seed listo. Usuarios: admin@local / uep@local / lab@local / sumar@local / "
-            "sistemas@local / planif@local / inmuniz@local  —  clave: tablero2026"
+            "sistemas@local / planif@local / inmuniz@local / telesalud@local  —  clave: tablero2026"
         ))
