@@ -1123,8 +1123,7 @@ class Command(BaseCommand):
                 "objetivo": "Ampliar la implementación de servicios de Telesalud en la red hospitalaria provincial.",
                 "nota": (
                     "Planilla INDICADORES TELESALUD. El título original decía “cantidad”; "
-                    "la fórmula es un porcentaje. El tercer indicador (demanda espontánea) queda pendiente "
-                    "hasta que el área corrija el denominador."
+                    "la fórmula es un porcentaje."
                 ),
                 "meta_min": Decimal("50"),
                 "mediciones": [
@@ -1177,6 +1176,37 @@ class Command(BaseCommand):
                         "den": Decimal("17"),
                         "es_prueba": True,
                         "conclusion": "Planilla Telesalud sep-2026 interpretado como 7/17 (41%). Excel lo había convertido en fecha. VP hasta que el área lo confirme.",
+                    },
+                ],
+            },
+            {
+                "nombre": "Porcentaje de demanda espontánea atendida por consultorio virtual",
+                "area_direccion": "Dirección de Telesalud",
+                "dimension": "Gestión Específica del Área",
+                "formula": "Consultas de demanda espontánea virtuales / (presenciales + virtuales) × 100",
+                "tipo_calculo": IndicadorVersion.TipoCalculo.RAZON,
+                "unidad": "%",
+                "num_desc": "Consultas de demanda espontánea virtuales",
+                "den_desc": "Total de consultas de demanda espontánea (presenciales + virtuales)",
+                "meta_tipo": IndicadorVersion.MetaTipo.MINIMO,
+                "sentido": IndicadorVersion.Sentido.ASCENDENTE,
+                "fuente": "Registro de Consultas de Telesalud",
+                "frecuencia": T,
+                "objetivo": "Medir qué parte de la demanda espontánea se resuelve por consultorio virtual.",
+                "nota": (
+                    "Definido por el área como proporción sobre toda la demanda espontánea "
+                    "(no como razón entre dos universos). Meta ≥ 10% en 2026. "
+                    "El 168/3952 de la planilla se tomó como 168 virtuales y 3952 presenciales, "
+                    "confirmado por el área."
+                ),
+                "meta_min": Decimal("10"),
+                "mediciones": [
+                    {
+                        "periodo": (2025, T, 4),
+                        "num": Decimal("168"),
+                        "den": Decimal("4120"),
+                        "es_prueba": False,
+                        "conclusion": "Planilla Telesalud 2025: 168 virtuales / (3952 presenciales + 168 virtuales) = 4,1%. Por debajo de la meta del 10%.",
                     },
                 ],
             },

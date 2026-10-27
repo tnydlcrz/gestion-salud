@@ -1,4 +1,4 @@
-"""Alta idempotente de Dirección de Telesalud (indicadores 1 y 2; el 3 queda pendiente)."""
+"""Alta idempotente de Dirección de Telesalud (nodos, CAPS y demanda espontánea)."""
 
 from __future__ import annotations
 
@@ -25,9 +25,9 @@ INDICADORES = [
         "objetivo": "Ampliar la implementación de servicios de Telesalud en la red hospitalaria provincial.",
         "nota": (
             "Planilla INDICADORES TELESALUD. El título original decía “cantidad”; "
-            "la fórmula es un porcentaje. El tercer indicador (demanda espontánea) queda pendiente "
-            "hasta que el área corrija el denominador."
+            "la fórmula es un porcentaje."
         ),
+        "frecuencia": "mensual",
         "meta_min": 50,
         "mediciones": [
             ("mensual", 2025, 12, Decimal("15"), Decimal("50"), False, "Planilla Telesalud: 15/50 hospitales (30%) en 2025."),
@@ -54,6 +54,7 @@ INDICADORES = [
             "Planilla INDICADORES TELESALUD. Meta ≥ 90%. El valor de septiembre 2026 se interpretó "
             "como 7/17 (Excel lo había guardado como fecha)."
         ),
+        "frecuencia": "mensual",
         "meta_min": 90,
         "mediciones": [
             ("mensual", 2025, 12, Decimal("0"), Decimal("17"), False, "Planilla Telesalud: 0/17 CAPS (0%) en 2025."),
@@ -65,6 +66,34 @@ INDICADORES = [
                 Decimal("17"),
                 True,
                 "Planilla Telesalud sep-2026 interpretado como 7/17 (41%). Excel lo había convertido en fecha. VP hasta que el área lo confirme.",
+            ),
+        ],
+    },
+    {
+        "nombre": "Porcentaje de demanda espontánea atendida por consultorio virtual",
+        "dimension": "Gestión Específica del Área",
+        "formula": "Consultas de demanda espontánea virtuales / (presenciales + virtuales) × 100",
+        "num_desc": "Consultas de demanda espontánea virtuales",
+        "den_desc": "Total de consultas de demanda espontánea (presenciales + virtuales)",
+        "fuente": "Registro de Consultas de Telesalud",
+        "objetivo": "Medir qué parte de la demanda espontánea se resuelve por consultorio virtual.",
+        "nota": (
+            "Definido por el área como proporción sobre toda la demanda espontánea "
+            "(no como razón entre dos universos). Meta ≥ 10% en 2026. "
+            "El 168/3952 de la planilla se tomó como 168 virtuales y 3952 presenciales, "
+            "confirmado por el área."
+        ),
+        "frecuencia": "trimestral",
+        "meta_min": 10,
+        "mediciones": [
+            (
+                "trimestral",
+                2025,
+                4,
+                Decimal("168"),
+                Decimal("4120"),
+                False,
+                "Planilla Telesalud 2025: 168 virtuales / (3952 presenciales + 168 virtuales) = 4,1%. Por debajo de la meta del 10%.",
             ),
         ],
     },
@@ -239,7 +268,7 @@ def main():
                         "meta_tipo": "minimo",
                         "sentido_mejora": "ascendente",
                         "fuente_datos": data["fuente"],
-                        "frecuencia": "mensual",
+                        "frecuencia": data["frecuencia"],
                         "objetivo_operativo": data["objetivo"],
                         "nota_metodologica": data["nota"],
                     }
@@ -249,6 +278,14 @@ def main():
             )[0]
             print(f"Alta indicador {indicador['id']} {data['nombre']}")
         else:
+            sb.table("indicadores_indicadorversion").update(
+                {
+                    "formula_calculo": data["formula"],
+                    "numerador_descripcion": data["num_desc"],
+                    "denominador_descripcion": data["den_desc"],
+                    "nota_metodologica": data["nota"],
+                }
+            ).eq("id", version["id"]).execute()
             print(f"Indicador {indicador['id']} ya existia {'(alta fila)' if alta_ind else ''}")
 
         metas = (
